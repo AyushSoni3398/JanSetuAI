@@ -46,17 +46,34 @@ class ComplaintAnalysis(BaseModel):
 # Mock analyser
 # --------------------------------------------------------------------------
 
-# Script ranges are the only reliable signal for native-script input.
-_SCRIPTS = [
-    ("hi", r"[ऀ-ॿ]"),   # Devanagari - also Marathi, disambiguated below
-    ("bn", r"[ঀ-৿]"),
-    ("ta", r"[஀-௿]"),
-    ("te", r"[ఀ-౿]"),
-    ("gu", r"[઀-૿]"),
+# Script detection.
+#
+# The DANDA (U+0964) and DOUBLE DANDA (U+0965) are deliberately excluded from
+# the Devanagari range: they are the sentence terminator for Bengali, Marathi,
+# Nepali and most Indic scripts, but Unicode files them in the Devanagari
+# block. Including them made a single full stop at the end of a Bengali
+# sentence outweigh every Bengali letter in it.
+_SCRIPT_RANGES = [
+    ("hi", 0x0900, 0x0963),   # Devanagari, below the danda
+    ("hi", 0x0966, 0x097F),   # Devanagari, above the danda
+    ("bn", 0x0980, 0x09FF),
+    ("gu", 0x0A80, 0x0AFF),
+    ("ta", 0x0B80, 0x0BFF),
+    ("te", 0x0C00, 0x0C7F),
 ]
 
-# Romanised cues, since most seeded complaints are transliterated rather than
-# written in native script.
+# Devanagari carries both Hindi and Marathi, so script alone cannot separate
+# them - only function words can. These are chosen to be unambiguous: the
+# Marathi forms use different vowel signs from their Hindi counterparts
+# (आहे vs है, नाही vs नहीं), so they cannot match inside each other.
+_DEVANAGARI_MARKERS = {
+    "mr": ["आहे", "आहेत", "नाही", "नाहीत", "झाले", "पडले", "अशक्य",
+           "चालवणे", "मध्ये", "सुधारली", "गुणवत्ता", "यांनी"],
+    "hi": ["है", "हैं", "नहीं", "रहा", "रहे", "हुआ", "गया", "किया", "रही"],
+}
+
+# Romanised cues, since many complaints are transliterated into Latin script
+# rather than written in the native one.
 _ROMAN_HINTS = {
     "mr": ["aahe", "aahet", "rastyavar", "jhale", "purvatha", "sudharli", "khadde", "panyachi"],
     "hi": ["hai", "nahi", "raha", "rahe", "paani", "sadak", "gaddha", "mohalla", "kharab"],
@@ -64,20 +81,58 @@ _ROMAN_HINTS = {
     "bn": ["amader", "hocche", "thake", "nei", "onek", "protidin", "elakay"],
 }
 
+# Category cues in every script we accept. Native-script terms sit alongside
+# the romanised ones in the same list: matching is plain substring search, and
+# str.lower() is a no-op for Indic scripts, so one lookup covers both.
 _CATEGORY_KEYWORDS = {
-    "Roads": ["road", "pothole", "gaddha", "khadde", "sadak", "rasta", "rastyavar", "highway"],
-    "Water Supply": ["water", "paani", "nal ", "tap", "panyachi", "jol", "muddy", "borewell"],
-    "Sanitation": ["garbage", "kuppai", "waste", "kachra", "toilet", "sanitation", "rubbish", "dump"],
-    "Electricity": ["electric", "power", "vij", "bijli", "bidyut", "outage", "transformer"],
-    "Public Transport": ["bus", "transport", "auto", "vasathi", "route", "pergundu", "train"],
-    "Healthcare": ["hospital", "doctor", "daktar", "health centre", "health center", "maruthuva", "clinic"],
-    "Drainage": ["drain", "naali", "sewage", "sewer", "waterlog", "flood", "overflow"],
-    "Street Lighting": ["street light", "streetlight", "lamp", "pole", "dark"],
+    "Roads": [
+        "road", "pothole", "gaddha", "khadde", "sadak", "rasta", "rastyavar", "highway",
+        "सड़क", "गड्ढा", "गड्ढे", "रास्ता", "रस्ता", "रस्त्यावर", "खड्डे",
+        "রাস্তা", "গর্ত", "சாலை", "குழி",
+    ],
+    "Water Supply": [
+        "water", "paani", "nal ", "tap", "panyachi", "jol", "muddy", "borewell",
+        "पानी", "पाणी", "पाण्याची", "नल", "जल", "नळ",
+        "পানি", "জল", "নল", "தண்ணீர்", "குழாய்",
+    ],
+    "Sanitation": [
+        "garbage", "kuppai", "waste", "kachra", "toilet", "sanitation", "rubbish", "dump",
+        "कचरा", "कूड़ा", "गंदगी", "सफाई", "स्वच्छता",
+        "আবর্জনা", "নোংরা", "ময়লা", "குப்பை", "கழிவு",
+    ],
+    "Electricity": [
+        "electric", "power", "vij", "bijli", "bidyut", "outage", "transformer",
+        "बिजली", "विद्युत", "वीज", "करंट",
+        "বিদ্যুৎ", "কারেন্ট", "மின்சாரம்", "மின்",
+    ],
+    "Public Transport": [
+        "bus", "transport", "auto", "vasathi", "route", "pergundu", "train",
+        "बस", "परिवहन", "बससेवा", "रेल",
+        "বাস", "পরিবহন", "பேருந்து", "போக்குவரத்து",
+    ],
+    "Healthcare": [
+        "hospital", "doctor", "daktar", "health centre", "health center", "maruthuva", "clinic",
+        "अस्पताल", "डॉक्टर", "स्वास्थ्य", "दवाखाना", "रुग्णालय",
+        "হাসপাতাল", "ডাক্তার", "চিকিৎসক", "மருத்துவமனை", "மருத்துவர்",
+    ],
+    "Drainage": [
+        "drain", "naali", "sewage", "sewer", "waterlog", "flood", "overflow",
+        "नाली", "नाला", "गटार", "सीवर", "जलभराव",
+        "নর্দমা", "ড্রেন", "கழிவுநீர்", "வடிகால்",
+    ],
+    "Street Lighting": [
+        "street light", "streetlight", "lamp", "pole", "dark",
+        "स्ट्रीट लाइट", "बत्ती", "रोशनी", "दिवा", "पथदिवा", "अंधेरा",
+        "বাতি", "আলো", "விளக்கு", "தெருவிளக்கு",
+    ],
 }
 
 _SEVERITY_HIGH = [
     "accident", "death", "died", "danger", "khatarnak", "disease", "bimari",
     "emergency", "collapse", "doctor", "daktar", "sewage", "gnda paani",
+    "दुर्घटना", "अपघात", "खतरनाक", "धोकादायक", "बीमारी", "बिमारी", "आजार", "मौत", "गंभीर",
+    "দুর্ঘটনা", "বিপজ্জনক", "রোগ", "মৃত্যু", "গুরুতর",
+    "விபத்து", "ஆபத்து", "நோய்",
 ]
 
 # A problem type carries inherent severity before any keyword is read: no
@@ -95,15 +150,52 @@ _BASE_SEVERITY = {
     "Street Lighting": 2,
     "Other": 3,
 }
-_SEVERITY_MED = ["weeks", "hafte", "broken", "kharab", "not working", "irregular", "delay"]
-_POSITIVE = ["good condition", "repaired", "improved", "sudharli", "resolved", "no longer an issue"]
-_MILD = ["slightly", "occasionally", "mostly works", "could be", "minor", "thoda"]
+_SEVERITY_MED = [
+    "weeks", "hafte", "broken", "kharab", "not working", "irregular", "delay",
+    "हफ्ते", "महीने", "खराब", "बंद", "आठवडे", "महिने", "नियमित नाही",
+    "সপ্তাহ", "মাস", "খারাপ", "வாரம்", "மாதம்", "பழுது",
+]
+_POSITIVE = [
+    "good condition", "repaired", "improved", "sudharli", "resolved", "no longer an issue",
+    "ठीक हो गया", "सुधार", "सुधारली", "दुरुस्त", "अच्छी स्थिति",
+    "ভালো হয়েছে", "সংস্কার", "சரிசெய்யப்பட்டது",
+]
+_MILD = [
+    "slightly", "occasionally", "mostly works", "could be", "minor", "thoda",
+    "थोड़ा", "कभी-कभी", "थोडे", "किरकोळ",
+    "সামান্য", "মাঝে মাঝে", "சிறிது",
+]
+
+
+def _script_counts(text: str) -> dict[str, int]:
+    """How many characters of the text belong to each supported script."""
+    counts: dict[str, int] = {}
+    for ch in text:
+        cp = ord(ch)
+        for code, lo, hi in _SCRIPT_RANGES:
+            if lo <= cp <= hi:
+                counts[code] = counts.get(code, 0) + 1
+                break
+    return counts
 
 
 def _detect_language(text: str) -> str:
-    for code, pattern in _SCRIPTS:
-        if re.search(pattern, text):
-            return code
+    """Identify the language of a complaint in native OR romanised script.
+
+    Native script wins when present, decided by which script contributes the
+    most characters rather than by first match - that keeps a stray shared
+    character (or a quoted English word) from flipping the result.
+    """
+    counts = _script_counts(text)
+    if counts:
+        script = max(counts, key=lambda code: counts[code])
+        if script == "hi":
+            mr = sum(text.count(word) for word in _DEVANAGARI_MARKERS["mr"])
+            hi = sum(text.count(word) for word in _DEVANAGARI_MARKERS["hi"])
+            # Ties go to Hindi: it is the more common submission language.
+            return "mr" if mr > hi else "hi"
+        return script
+
     lowered = " " + text.lower() + " "
     scores = {
         lang: sum(1 for hint in hints if hint in lowered)

@@ -90,6 +90,33 @@ TEMPLATES = [
      "Water Supply", 2, 2, "neutral"),
 ]
 
+# Native-script complaints. The romanised entries above are how people type on
+# phones; these are how the same complaints arrive from web forms and kiosks.
+# Both paths must classify correctly, so both are represented in the corpus.
+TEMPLATES += [
+    ("hi", "सड़क पर बड़ा गड्ढा है, रोज़ दुर्घटना हो रही है।",
+     "There is a large pothole on the road and accidents happen daily.",
+     "Roads", 5, 5, "angry"),
+    ("hi", "नाली का गंदा पानी सड़क पर बह रहा है, बीमारी फैल रही है।",
+     "Dirty drain water is flowing onto the road and disease is spreading.",
+     "Drainage", 5, 4, "angry"),
+    ("hi", "स्ट्रीट लाइट एक महीने से खराब है, रात में निकलना खतरनाक है।",
+     "The street light has been broken for a month; going out at night is dangerous.",
+     "Street Lighting", 3, 3, "frustrated"),
+    ("mr", "रस्त्यावर खड्डे पडले आहेत, दुचाकी चालवणे अशक्य झाले आहे.",
+     "The road is full of potholes; riding a two-wheeler has become impossible.",
+     "Roads", 4, 4, "frustrated"),
+    ("bn", "হাসপাতালে ডাক্তার নেই, রোগীদের অনেক দূর যেতে হচ্ছে।",
+     "There is no doctor at the hospital; patients must travel far.",
+     "Healthcare", 5, 5, "concerned"),
+    ("bn", "আমাদের এলাকায় প্রায় প্রতিদিন বিদ্যুৎ চলে যায়।",
+     "Electricity goes out almost daily in our area.",
+     "Electricity", 4, 4, "frustrated"),
+    ("ta", "எங்கள் பள்ளிக்கூடம் அருகில் குப்பை குவியல் உள்ளது.",
+     "There is a garbage pile near our school.",
+     "Sanitation", 4, 3, "frustrated"),
+]
+
 LOCATIONS = [
     "Main Bazaar Road", "Station Road", "Ward 7", "Gandhi Nagar", "Old Town",
     "Bus Stand Area", "Civil Lines", "Industrial Colony", "Rail Colony",

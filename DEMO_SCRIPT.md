@@ -37,6 +37,12 @@ Then confirm, in this order:
 Hamare gaon me hospital me daktar nahi hai, log door jaate hain aur bimari fail rahi hai.
 ```
 
+**Optional second complaint** (native Devanagari — shows both scripts work):
+
+```
+हमारे गाँव के अस्पताल में डॉक्टर नहीं है, बीमारी फैल रही है।
+```
+
 ---
 
 ## 2. The three-minute script
@@ -51,7 +57,7 @@ Hamare gaon me hospital me daktar nahi hai, log door jaate hain aur bimari fail 
 ### 0:20 – 0:55 — Citizen side
 
 Click **Report an issue**. Paste the Hindi complaint. Choose district
-**Muzaffarpur, Bihar**. Click **Submit report**.
+**Balangir, Odisha**. Click **Submit report**.
 
 > "A citizen writes in their own language — this is romanised Hindi. One
 > submission, and the system detects the language and classifies it in a single
@@ -73,8 +79,8 @@ Point at the analysis card:
 
 Click **Dashboard**.
 
-> "Now the same data from the government's side. 140 complaints, ten districts,
-> five languages."
+> "Now the same data from the government's side. 135 complaints, ten districts,
+> five languages, in both native and romanised script."
 
 Point at the map.
 
@@ -86,11 +92,12 @@ Point at the ranking table.
 
 | # | District | Score | Issues | Avg severity | Infra index |
 |---|---|---|---|---|---|
-| 1 | Muzaffarpur, Bihar | **81.1** | 15 | 3.92 | 28.4 |
-| 2 | Balangir, Odisha | **80.2** | 18 | 4.12 | 31.2 |
-| 3 | Chitrakoot, UP | **78.4** | 19 | 4.29 | 34.6 |
+| 1 | Balangir, Odisha | **83.8** | 18 | 4.44 | 31.2 |
+| 2 | Muzaffarpur, Bihar | **81.6** | 15 | 4.08 | 28.4 |
+| 3 | Chitrakoot, UP | **73.8** | 16 | 4.38 | 34.6 |
 | … | | | | | |
-| 8 | Pune, Maharashtra | 29.3 | 3 | 2.33 | 78.9 |
+| 8 | Pune, Maharashtra | 27.8 | 5 | 2.40 | 78.9 |
+| 10 | Coimbatore, Tamil Nadu | 13.1 | 5 | 2.25 | 74.2 |
 
 > "Weighted score: severity 30%, volume 25%, infrastructure 20%, population 15%,
 > investment 10%. Complaint volume alone would be misleading — we count distinct
@@ -99,32 +106,32 @@ Point at the ranking table.
 
 ### 1:40 – 2:20 — The differentiator: why this area
 
-Click **Muzaffarpur** in the table.
+Click **Balangir** in the table.
 
 > "This is the part that matters. The score isn't a black box."
 
 | Factor | Points | Raw |
 |---|---|---|
-| Average severity | **25.5** | 3.92 / 5 |
-| Infrastructure shortfall | **20.0** | index 28.4 / 100 |
-| Distinct issues | **18.8** | 15 |
-| Investment per person | **10.0** | ₹19.79 |
-| Population | 6.8 | 4,801,062 |
+| Average severity | **30.0** | 4.44 / 5 |
+| Distinct issues | **25.0** | 18 |
+| Infrastructure shortfall | **18.9** | index 31.2 / 100 |
+| Investment per person | 8.7 | ₹47.30 |
+| Population | 1.2 | 1,648,997 |
 
-> "Muzaffarpur is first because the problems reported there are the most
-> dangerous, and its infrastructure index is the worst in the set."
+> "Balangir is first because it maxes out the two heaviest factors — the most
+> severe problems in the set, and the most of them. Population barely
+> contributes: it is a small district."
 
 Now click **Pune** — this contrast is the strongest 15 seconds of the demo.
 
-> "Pune scores 29 — and look, three factors contribute **zero**, because Pune is
-> the best in the set on severity, volume and infrastructure. Its entire score
-> comes from population and low per-head investment. Same formula, completely
-> different explanation. A department head can argue with this. They can't argue
-> with a number."
+> "Pune scores 28 — and look, volume and infrastructure contribute **zero**,
+> because Pune is the best in the set on both. Its score is almost entirely
+> population and low per-head investment. Same formula, opposite explanation.
+> A department head can argue with this. They can't argue with a number."
 
 ### 2:20 – 2:50 — Closing the loop
 
-Still on Muzaffarpur, find your complaint at the top of the feed (severity 5,
+Still on Balangir, find your complaint at the top of the feed (severity 5,
 Healthcare). Click **Mark Resolved**.
 
 > "The department acts and marks it resolved."
@@ -157,13 +164,22 @@ Click **No, still broken**.
 **"Are the translations real?"**
 > No — be straight about this. The English text next to seeded complaints is
 > authored seed data. The mock cannot translate; it marks its output so it can't
-> masquerade as a translation. With an API key, translation is real.
+> masquerade as a translation. With an API key, translation is real. What *is*
+> real without a key is language detection and classification — 100% on both.
+
+**"Does it handle native script, or only romanised?"**
+> Both, and it tells them apart. Native script is detected by counting
+> characters per Unicode block; romanised text falls through to language-specific
+> word cues. Devanagari carries both Hindi and Marathi, so those are separated by
+> function words. Measured: 25/25 on language and 25/25 on category across both
+> scripts. Standard translation engines can't parse romanised Hindi at all —
+> that is the harder half and we handle it.
 
 **"Why not Bhashini?"**
 > Out of scope for 24 hours. The analysis layer is a swappable interface — a
 > Bhashini backend would implement the same `analyze_text` contract.
 
-**"A score of 81 out of what? Is that absolute need?"**
+**"A score of 84 out of what? Is that absolute need?"**
 > No. Every factor is min-max normalised **across this district set**, so it
 > ranks relative need. The top district always scores near 100 by construction.
 > Add a worse district and every score shifts. The UI says this on every
@@ -176,8 +192,8 @@ Click **No, still broken**.
 
 **"How do you stop one angry person spamming the ranking?"**
 > Duplicate detection. Repeat reports of the same issue are grouped and counted
-> as corroboration, not volume — the table shows `15 +10`: fifteen distinct
-> problems, ten repeat reports.
+> as corroboration, not volume — the table shows `18 +7` for Balangir:
+> eighteen distinct problems, seven repeat reports.
 
 **"What about voice and photo intake?"**
 > Not built. Text only in this 24-hour build.
@@ -196,7 +212,7 @@ Click **No, still broken**.
 | Dashboard shows API down | Backend died | Restart uvicorn, reload page |
 | Numbers differ from this script | DB reseeded mid-session | Reseed with `--reset` and reload |
 | Submit button disabled | Text under 5 characters | Paste the sample |
-| "Analyse N pending" button visible | 13 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
+| "Analyse N pending" button visible | 11 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
 
 **Golden rule:** if a piece breaks, skip it and go to the explanation panel.
 That is the strongest part of the product and needs only data already loaded.

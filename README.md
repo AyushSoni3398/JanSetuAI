@@ -4,6 +4,9 @@ Turns multilingual citizen infrastructure complaints into a ranked, explainable
 district priority signal — and closes the loop by letting the citizen verify
 whether the fix actually happened.
 
+Accepts complaints in **native script** (देवनागरी, বাংলা, தமிழ்) **and romanised
+script** ("Sadak par gaddha hai"), and identifies which language either one is.
+
 Built as a 24-hour hackathon project.
 
 ---
@@ -75,7 +78,7 @@ python -m venv .venv
 python -m pip install -r backend/requirements.txt
 ```
 
-Seed the database with 10 districts and 140 synthetic complaints, then run the
+Seed the database with 10 districts and 135 synthetic complaints, then run the
 API (both from `backend/`):
 
 ```bash
@@ -153,6 +156,20 @@ value, normalised position, weight and points contributed — which is what the
 
 ## The AI layer
 
+### Script handling
+
+Native script is identified by counting characters per Unicode block and
+taking the majority — not by first match. That detail matters: the DANDA
+(`।`, U+0964) is the sentence terminator for Bengali, Marathi and Nepali but
+Unicode files it in the *Devanagari* block, so a first-match detector labels
+every properly punctuated Bengali complaint as Hindi.
+
+Devanagari carries both Hindi and Marathi, so those are separated by function
+words (`आहे`/`नाही` vs `है`/`नहीं`). Text with no Indic characters falls
+through to romanised word cues.
+
+### The analysis call
+
 One call does language detection, translation and classification together,
 returning structured JSON. Two interchangeable backends sit behind
 `analyze_text()`:
@@ -168,15 +185,20 @@ falls back to the mock rather than raising. `analyze_text()` never throws.
 To enable the real path, copy `backend/.env.example` to `backend/.env` and set
 `ANTHROPIC_API_KEY`. `/health` then reports `"ai_provider": "claude"`.
 
-**Be aware of what the mock does and does not do.** Measured against the 18
-ground-truth seed templates:
+**Be aware of what the mock does and does not do.** Measured against the 25
+ground-truth seed templates, split by script:
 
-| | Accuracy |
-|---|---|
-| Language detection | 18/18 (100%) |
-| Category | 18/18 (100%) |
-| Severity, exact | 9/18 (50%) |
-| Severity, within ±1 | 18/18 (100%) |
+| | Romanised (18) | Native script (7) | Combined (25) |
+|---|---|---|---|
+| Language detection | 100% | 100% | **25/25 (100%)** |
+| Category | 100% | 100% | **25/25 (100%)** |
+| Severity, exact | 50% | 29% | 11/25 (44%) |
+| Severity, within ±1 | 100% | 100% | **25/25 (100%)** |
+
+Severity is the weakest signal — it is the one judgement call a keyword matcher
+cannot really make — but it never misses by more than one point, and it carries
+the heaviest weight in the score, which is why the real provider matters most
+there.
 
 **The mock cannot translate.** It returns `"[auto] " + original` and the UI
 strips that marker rather than displaying it as a translation. Real translation
@@ -218,8 +240,9 @@ DEMO_SCRIPT.md              three-minute demo walkthrough
 ## Seed data
 
 10 districts across 9 states, engineered into three tiers (underserved /
-moderate / well-served) so the weighting has a real signal to find, and 140
-complaints in Hindi, Marathi, Tamil, Bengali and English.
+moderate / well-served) so the weighting has a real signal to find, and 135
+complaints in Hindi, Marathi, Tamil, Bengali and English — in both native and
+romanised script.
 
 `RANDOM_SEED` is fixed, so reruns produce identical data and demo numbers never
 shift. About 10% of complaints are left unanalysed so the AI pass has live work
