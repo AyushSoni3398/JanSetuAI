@@ -58,7 +58,7 @@ and a **policymaker dashboard** for prioritising and acting.
 | `/` | Landing page with live stats and the current top-priority districts |
 | `/dashboard` | Policymaker view: map, ranking, category chart, complaint feed |
 | `/districts/:id` | District detail: full score breakdown, chart and complaints. Shareable link |
-| `/report` | Citizen submission form with instant analysis |
+| `/report` | Citizen submission form with voice input and instant analysis |
 | `/my-reports` | Citizen tracking and verification of claimed fixes |
 
 
@@ -179,6 +179,19 @@ Devanagari carries both Hindi and Marathi, so those are separated by function
 words (`आहे`/`नाही` vs `है`/`नहीं`). Text with no Indic characters falls
 through to romanised word cues.
 
+### Voice input
+
+`/report` accepts spoken complaints through the browser's built-in speech
+recognition (`webkitSpeechRecognition`). The citizen picks a language first -
+recognition cannot detect one before it listens - and Indian languages are
+transcribed into **native script**, which feeds straight into the script
+handling above. The transcript lands in the same textarea, so it can be
+corrected before submitting and the rest of the pipeline is unchanged.
+
+This is the browser's engine, **not Bhashini and not a model we run**. It
+requires an internet connection and works in Chrome, Edge and Brave; where
+the API is missing the control is not rendered and typing still works.
+
 ### The analysis call
 
 One call does language detection, translation and classification together,
@@ -285,7 +298,8 @@ weighting is correct — not that the model discovered anything unknown.
 Scope decisions for a 24-hour build, not oversights:
 
 - **No authentication.** "My reports" is browser-local storage.
-- **No voice or photo intake.** Text only. Bhashini/ASR is not integrated.
+- **No photo intake, and no server-side ASR.** Voice uses the browser's own
+  speech recognition; Bhashini is not integrated.
 - **No migrations.** `Base.metadata.create_all()`; schema changes need a reseed.
 - **No websockets**, no multi-tenancy, no RBAC, no model training.
 - **SQLite, not Postgres.** No dialect-specific column types are used, so

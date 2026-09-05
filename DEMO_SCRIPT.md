@@ -29,6 +29,9 @@ Then confirm, in this order:
 - [ ] Header shows **`AI: gemini`** (falls back to `mock` if quota is spent)
 - [ ] Browser zoom at 100%, `/dashboard` already open in a tab
 - [ ] Clear browser storage so "My reports" starts empty
+- [ ] **Grant microphone permission now** - open `/report`, click "Speak your
+      complaint", allow the prompt, and check a spoken Hindi line transcribes.
+      Never let the permission dialog appear for the first time on stage.
 - [ ] Have the Hindi sample ready to paste (below) — **do not type it live**
 
 **Complaint to paste** (romanised Hindi):
@@ -196,7 +199,10 @@ Click **No, still broken**.
 > eighteen distinct problems, seven repeat reports.
 
 **"What about voice and photo intake?"**
-> Not built. Text only in this 24-hour build.
+> Voice is built - the browser's own speech recognition, which transcribes Indian
+> languages into their native script and feeds the same pipeline. It is not
+> Bhashini and not a model we run; a production system would swap Bhashini in
+> behind the same interface. Photo intake is not built.
 
 **"Is there authentication?"**
 > No. Deliberately out of scope. "My reports" is browser-local.
@@ -213,6 +219,7 @@ Click **No, still broken**.
 | Numbers differ from this script | DB reseeded mid-session | Reseed with `--reset` and reload |
 | Header flips to `AI: mock` | Daily free quota spent | Still fully functional — say so plainly; classification is unaffected |
 | Submit button disabled | Text under 5 characters | Paste the sample |
+| Mic button does nothing | Permission blocked, or no internet | Say so and type instead - the pipeline is identical |
 | "Analyse N pending" button visible | 11 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
 
 **Golden rule:** if a piece breaks, skip it and go to the explanation panel.
