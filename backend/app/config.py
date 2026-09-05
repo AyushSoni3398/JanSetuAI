@@ -18,6 +18,16 @@ class Settings(BaseSettings):
     # tries to JSON-decode env vars typed as list, which makes the .env awkward.
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # --- AI analysis (M5) ---
+    # Empty = run the deterministic mock. The real provider is used only when a
+    # key is present, and it still falls back to the mock on any failure.
+    ANTHROPIC_API_KEY: str = ""
+    AI_MODEL: str = "claude-opus-5"
+
+    @property
+    def ai_enabled(self) -> bool:
+        return bool(self.ANTHROPIC_API_KEY.strip())
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]

@@ -68,3 +68,22 @@ class DistrictOut(BaseModel):
     population: int
     infrastructure_index: float
     current_investment: float
+
+
+class AnalysisResult(BaseModel):
+    """Returned after analysing a single complaint."""
+
+    complaint: ComplaintOut
+    provider: str = Field(description="Which analyser produced this: claude or mock")
+    duplicate_of: int | None = Field(
+        default=None, description="Canonical complaint this was linked to, if any"
+    )
+
+
+class BatchAnalysisResult(BaseModel):
+    """Summary of an analyse-pending run."""
+
+    analyzed: int
+    duplicates_found: int
+    provider: str
+    remaining_unanalyzed: int

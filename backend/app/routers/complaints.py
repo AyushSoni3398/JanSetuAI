@@ -6,12 +6,18 @@ submission never blocks on (or fails because of) the LLM.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Complaint, District
-from app.schemas import ComplaintCreate, ComplaintOut
+from app.schemas import (
+    AnalysisResult,
+    BatchAnalysisResult,
+    ComplaintCreate,
+    ComplaintOut,
+)
+from app.services import ai_service, duplicate_service
 
 router = APIRouter(prefix="/complaints", tags=["complaints"])
 
@@ -76,3 +82,77 @@ def get_complaint(complaint_id: int, db: Session = Depends(get_db)):
             detail=f"Complaint {complaint_id} not found",
         )
     return complaint
+
+
+def _apply_analysis(complaint: Complaint) -> str:
+    """Run the AI pass over one complaint and copy the result onto the row."""
+    analysis, provider = ai_service.analyze_text(complaint.text)
+
+    complaint.language = analysis.language
+    complaint.translated_text = analysis.translated_text
+    complaint.category = analysis.category
+    complaint.severity = analysis.severity
+    complaint.urgency = analysis.urgency
+    complaint.sentiment = analysis.sentiment
+    complaint.ai_summary = analysis.summary
+    complaint.population_affected = analysis.population_affected
+    return provider
+
+
+@router.post("/{complaint_id}/analyze", response_model=AnalysisResult)
+def analyze_complaint(complaint_id: int, db: Session = Depends(get_db)):
+    """Run language detection + translation + classification on one complaint."""
+    complaint = db.get(Complaint, complaint_id)
+    if complaint is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Complaint {complaint_id} not found",
+        )
+
+    provider = _apply_analysis(complaint)
+    canonical = duplicate_service.link_duplicate(db, complaint)
+    db.commit()
+    db.refresh(complaint)
+
+    return AnalysisResult(
+        complaint=ComplaintOut.model_validate(complaint),
+        provider=provider,
+        duplicate_of=canonical.id if canonical else None,
+    )
+
+
+@router.post("/analyze-pending", response_model=BatchAnalysisResult)
+def analyze_pending(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=20, ge=1, le=200),
+):
+    """Drain the unanalysed queue: analyse up to `limit` complaints in one pass."""
+    pending = (
+        db.execute(
+            select(Complaint)
+            .where(Complaint.category.is_(None))
+            .order_by(Complaint.id)
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+
+    provider = ai_service.active_provider()
+    duplicates = 0
+    for complaint in pending:
+        provider = _apply_analysis(complaint)
+        if duplicate_service.link_duplicate(db, complaint) is not None:
+            duplicates += 1
+    db.commit()
+
+    remaining = db.execute(
+        select(func.count()).select_from(Complaint).where(Complaint.category.is_(None))
+    ).scalar_one()
+
+    return BatchAnalysisResult(
+        analyzed=len(pending),
+        duplicates_found=duplicates,
+        provider=provider,
+        remaining_unanalyzed=remaining,
+    )

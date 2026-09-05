@@ -10,6 +10,7 @@ from app.database import Base, engine
 # Importing models registers them on Base.metadata before create_all runs.
 from app import models  # noqa: F401
 from app.routers import complaints
+from app.services import ai_service
 
 app = FastAPI(title="JanSetu AI", version="0.1.0")
 
@@ -42,4 +43,5 @@ def health():
         "status": "ok",
         "service": "jansetu-api",
         "database": database_status,
+        "ai_provider": ai_service.active_provider(),
     }
