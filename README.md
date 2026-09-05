@@ -48,8 +48,19 @@ citizen complaint (any language)
                      └──── disputed ──────────┘
 ```
 
-Two interfaces, one deployment: a **citizen view** for reporting and tracking,
+Two audiences, one deployment: a **citizen side** for reporting and tracking,
 and a **policymaker dashboard** for prioritising and acting.
+
+### Pages
+
+| Route | Page |
+|---|---|
+| `/` | Landing page with live stats and the current top-priority districts |
+| `/dashboard` | Policymaker view: map, ranking, category chart, complaint feed |
+| `/districts/:id` | District detail: full score breakdown, chart and complaints. Shareable link |
+| `/report` | Citizen submission form with instant analysis |
+| `/my-reports` | Citizen tracking and verification of claimed fixes |
+
 
 ---
 
@@ -244,9 +255,12 @@ backend/
       workflow_service.py   status transitions and verification
 frontend/
   src/
-    api.js                  typed-ish API client
-    App.jsx                 view toggle + dashboard shell
-    components/             map, ranking, chart, feed, explanation, citizen view
+    api.js                  API client
+    App.jsx                 route table
+    DataContext.jsx         one fetch shared across routes
+    myReports.js            per-device report ids (localStorage)
+    pages/                  Home, Dashboard, District, Report, MyReports, NotFound
+    components/             layout, map, ranking, chart, feed, explanation
 DEMO_SCRIPT.md              three-minute demo walkthrough
 ```
 

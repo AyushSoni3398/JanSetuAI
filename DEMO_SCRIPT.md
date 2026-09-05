@@ -27,7 +27,7 @@ Then confirm, in this order:
 - [ ] http://localhost:8000/health returns `"database":"connected"`
 - [ ] http://localhost:5173 loads, **map tiles render** (needs internet — check on venue wifi)
 - [ ] Header shows **`AI: gemini`** (falls back to `mock` if quota is spent)
-- [ ] Browser zoom at 100%, dashboard tab already open
+- [ ] Browser zoom at 100%, `/dashboard` already open in a tab
 - [ ] Clear browser storage so "My reports" starts empty
 - [ ] Have the Hindi sample ready to paste (below) — **do not type it live**
 
@@ -56,8 +56,8 @@ Hamare gaon me hospital me daktar nahi hai, log door jaate hain aur bimari fail 
 
 ### 0:20 – 0:55 — Citizen side
 
-Click **Report an issue**. Paste the Hindi complaint. Choose district
-**Balangir, Odisha**. Click **Submit report**.
+Go to **Report an issue** (`/report`). Paste the Hindi complaint. Choose
+district **Balangir, Odisha**. Click **Submit report**.
 
 > "A citizen writes in their own language — this is romanised Hindi. One
 > submission, and the system detects the language and classifies it in a single
@@ -77,7 +77,7 @@ Point at the analysis card:
 
 ### 0:55 – 1:40 — Policymaker side
 
-Click **Dashboard**.
+Click **Dashboard** (`/dashboard`).
 
 > "Now the same data from the government's side. 135 complaints, ten districts,
 > five languages, in both native and romanised script."
@@ -106,7 +106,8 @@ Point at the ranking table.
 
 ### 1:40 – 2:20 — The differentiator: why this area
 
-Click **Balangir** in the table.
+Click **Balangir** in the table &mdash; this opens its own page at
+`/districts/2`, which is a shareable link.
 
 > "This is the part that matters. The score isn't a black box."
 
