@@ -4,6 +4,7 @@ import CategoryChart from "./components/CategoryChart.jsx";
 import ComplaintFeed from "./components/ComplaintFeed.jsx";
 import DistrictMap from "./components/DistrictMap.jsx";
 import PriorityTable from "./components/PriorityTable.jsx";
+import ScoreExplanation from "./components/ScoreExplanation.jsx";
 import StatCards from "./components/StatCards.jsx";
 
 export default function App() {
@@ -151,10 +152,17 @@ export default function App() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <CategoryChart
-            complaints={visibleComplaints}
-            districtName={selected?.district.name}
-          />
+          {selected ? (
+            <ScoreExplanation
+              priority={selected}
+              totalDistricts={priorities.length}
+            />
+          ) : (
+            <CategoryChart
+              complaints={visibleComplaints}
+              districtName={selected?.district.name}
+            />
+          )}
           <ComplaintFeed
             complaints={visibleComplaints}
             districtName={selected?.district.name}
