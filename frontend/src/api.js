@@ -35,6 +35,10 @@ export const api = {
   // 200 is the server-side cap; the seeded set is well under it.
   complaints: () => get("/complaints?limit=200"),
   analyzePending: () => post("/complaints/analyze-pending?limit=200"),
+  districts: () => get("/districts"),
+  complaint: (id) => get(`/complaints/${id}`),
+  createComplaint: (payload) => post("/complaints", payload),
+  analyze: (id) => post(`/complaints/${id}/analyze`),
   setStatus: (id, status) => send("PATCH", `/complaints/${id}/status`, { status }),
   verify: (id, confirmed) => post(`/complaints/${id}/verify`, { confirmed }),
 };

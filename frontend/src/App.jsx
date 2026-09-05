@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "./api.js";
 import CategoryChart from "./components/CategoryChart.jsx";
+import CitizenView from "./components/CitizenView.jsx";
 import ComplaintFeed from "./components/ComplaintFeed.jsx";
 import DistrictMap from "./components/DistrictMap.jsx";
 import PriorityTable from "./components/PriorityTable.jsx";
@@ -15,6 +16,9 @@ export default function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  // "policymaker" is the dashboard; "citizen" is the reporting side. Two
+  // audiences, one deployment - a real system would split these.
+  const [view, setView] = useState("policymaker");
 
   const load = useCallback(async () => {
     try {
@@ -82,6 +86,25 @@ export default function App() {
             </p>
           </div>
 
+          <div className="ml-4 flex rounded border border-slate-600 p-0.5 text-xs">
+            {[
+              ["policymaker", "Dashboard"],
+              ["citizen", "Report an issue"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setView(key)}
+                className={`rounded px-2.5 py-1 ${
+                  view === key
+                    ? "bg-slate-600 text-slate-100"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="ml-auto flex flex-wrap items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 text-slate-400">
               <span
@@ -117,6 +140,9 @@ export default function App() {
         </div>
       )}
 
+      {view === "citizen" ? (
+        <CitizenView />
+      ) : (
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-4">
         <StatCards complaints={complaints} priorities={priorities} />
 
@@ -170,6 +196,7 @@ export default function App() {
           />
         </div>
       </main>
+      )}
     </div>
   );
 }
