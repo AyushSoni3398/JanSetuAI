@@ -323,7 +323,137 @@ class ClaudeAnalyzer:
             messages=[{"role": "user", "content": "Complaint:\n" + text}],
             output_format=ComplaintAnalysis,
         )
-        return response.parsed_output
+        analysis = response.parsed_output
+        analysis.language = normalise_language(analysis.language)
+        return analysis
+
+
+
+
+# Models sometimes answer "Hindi" where the schema asks for "hi". The database
+# and the UI badges assume ISO codes, so a mixed corpus would render as both.
+# Normalising here keeps every provider - and the mock - producing one format.
+_LANGUAGE_ALIASES = {
+    "hindi": "hi", "marathi": "mr", "bengali": "bn", "bangla": "bn",
+    "tamil": "ta", "telugu": "te", "gujarati": "gu", "english": "en",
+    "punjabi": "pa", "kannada": "kn", "malayalam": "ml", "odia": "or",
+    "urdu": "ur", "assamese": "as",
+}
+
+
+def normalise_language(value: str) -> str:
+    """Map a language name or code onto a lowercase ISO 639-1 code."""
+    cleaned = value.strip().lower()
+    if cleaned in _LANGUAGE_ALIASES:
+        return _LANGUAGE_ALIASES[cleaned]
+    # Already a code, or an unknown language we pass through untouched.
+    return cleaned[:2] if len(cleaned) > 2 and "-" not in cleaned else cleaned
+
+
+# --------------------------------------------------------------------------
+# Gemini analyser
+# --------------------------------------------------------------------------
+
+# Gemini's structured-output schema. Kept in sync with ComplaintAnalysis by
+# hand rather than generated, so the enum can pin `category` to our exact list
+# - the model cannot invent a category the dashboard does not know about.
+_GEMINI_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "language": {
+            "type": "string",
+            "description": "ISO 639-1 two-letter code, lowercase, e.g. hi, mr, ta, bn, en",
+        },
+        "translated_text": {"type": "string"},
+        "category": {"type": "string", "enum": CATEGORIES},
+        "severity": {"type": "integer"},
+        "urgency": {"type": "integer"},
+        "sentiment": {
+            "type": "string",
+            "enum": ["angry", "frustrated", "concerned", "neutral", "positive"],
+        },
+        "summary": {"type": "string"},
+        "population_affected": {"type": "integer"},
+    },
+    "required": [
+        "language", "translated_text", "category", "severity",
+        "urgency", "sentiment", "summary", "population_affected",
+    ],
+}
+
+
+class GeminiAnalyzer:
+    """One structured generateContent call per complaint.
+
+    Uses urllib rather than the google-genai SDK deliberately: it is one POST
+    with a JSON schema, and adding a dependency for that is not worth it.
+
+    Self-throttled. The free tier allows roughly 10 requests per minute, and a
+    batch run fires them back to back - without pacing, every complaint after
+    the first few returns 429 and silently falls through to the mock, which
+    looks like the model working badly rather than the quota being hit.
+    """
+
+    name = "gemini"
+
+    _ENDPOINT = (
+        "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+    )
+    _last_call: float = 0.0
+
+    def _wait_for_slot(self) -> None:
+        import time
+
+        gap = time.monotonic() - GeminiAnalyzer._last_call
+        if gap < settings.GEMINI_MIN_INTERVAL:
+            time.sleep(settings.GEMINI_MIN_INTERVAL - gap)
+        GeminiAnalyzer._last_call = time.monotonic()
+
+    def analyze(self, text: str) -> ComplaintAnalysis:
+        import json
+        import time
+        import urllib.error
+        import urllib.request
+
+        payload = {
+            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"parts": [{"text": "Complaint:\n" + text}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "responseSchema": _GEMINI_SCHEMA,
+            },
+        }
+        encoded = json.dumps(payload).encode("utf-8")
+
+        # Walk the model chain. A 429 means that model's daily quota is spent,
+        # so move to the next one rather than giving up - only when every model
+        # is exhausted do we let the error escape to the mock fallback.
+        last_error: Exception | None = None
+        for model in settings.gemini_models:
+            request = urllib.request.Request(
+                self._ENDPOINT.format(model=model, key=settings.GEMINI_API_KEY),
+                data=encoded,
+                headers={"Content-Type": "application/json"},
+            )
+            self._wait_for_slot()
+            try:
+                with urllib.request.urlopen(request, timeout=45) as response:
+                    body = json.load(response)
+                break
+            except urllib.error.HTTPError as exc:
+                last_error = exc
+                if exc.code in (429, 404):
+                    logger.info("Gemini model %s unavailable (%s), trying next", model, exc.code)
+                    continue
+                raise
+        else:
+            raise last_error or RuntimeError("no Gemini model available")
+
+        raw = body["candidates"][0]["content"]["parts"][0]["text"]
+        # Pydantic re-validates: the schema constrains shape, not the 1-5 bounds.
+        analysis = ComplaintAnalysis.model_validate_json(raw)
+        analysis.language = normalise_language(analysis.language)
+        return analysis
 
 
 # --------------------------------------------------------------------------
@@ -331,38 +461,54 @@ class ClaudeAnalyzer:
 # --------------------------------------------------------------------------
 
 _mock = MockAnalyzer()
+_gemini = GeminiAnalyzer()
 _claude: ClaudeAnalyzer | None = None
 
 
 def _get_claude() -> ClaudeAnalyzer | None:
     global _claude
-    if not settings.ai_enabled:
-        return None
     if _claude is None:
         try:
             _claude = ClaudeAnalyzer()
         except Exception as exc:  # missing SDK, bad key format, ...
-            logger.warning("Claude analyser unavailable, using mock: %s", exc)
+            logger.warning("Claude analyser unavailable: %s", exc)
             return None
     return _claude
+
+
+def _providers() -> list:
+    """Real analysers to try, in order. Gemini first when both keys are set."""
+    chain = []
+    if settings.gemini_enabled:
+        chain.append(_gemini)
+    if settings.claude_enabled:
+        claude = _get_claude()
+        if claude is not None:
+            chain.append(claude)
+    return chain
 
 
 def analyze_text(text: str) -> tuple[ComplaintAnalysis, str]:
     """Analyse one complaint.
 
-    Returns (analysis, provider_name). Never raises: if the real provider fails
-    for any reason the mock result is returned instead.
+    Returns (analysis, provider_name). Never raises: every configured provider
+    is tried in turn and the mock is the final backstop, so a failing key or a
+    dead network degrades the result rather than the request.
     """
-    claude = _get_claude()
-    if claude is not None:
+    for provider in _providers():
         try:
-            return claude.analyze(text), claude.name
+            return provider.analyze(text), provider.name
         except Exception as exc:
-            logger.warning("Claude analysis failed, falling back to mock: %s", exc)
-            return _mock.analyze(text), "mock (claude failed)"
-    return _mock.analyze(text), _mock.name
+            logger.warning("%s analysis failed: %s", provider.name, exc)
+
+    analysis = _mock.analyze(text)
+    return analysis, "mock" if not settings.ai_enabled else "mock (provider failed)"
 
 
 def active_provider() -> str:
     """Which backend would be used right now - surfaced on /health."""
-    return "claude" if settings.ai_enabled else "mock"
+    if settings.gemini_enabled:
+        return "gemini"
+    if settings.claude_enabled:
+        return "claude"
+    return "mock"

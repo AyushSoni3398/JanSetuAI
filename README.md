@@ -176,14 +176,27 @@ returning structured JSON. Two interchangeable backends sit behind
 
 | Backend | When | What it does |
 |---|---|---|
-| `MockAnalyzer` | default | Deterministic keyword analysis. No network, no cost. |
+| `GeminiAnalyzer` | `GEMINI_API_KEY` set | One structured `generateContent` call. Tried first. |
 | `ClaudeAnalyzer` | `ANTHROPIC_API_KEY` set | One `messages.parse` call to the Claude API. |
+| `MockAnalyzer` | always, as backstop | Deterministic keyword analysis. No network, no cost. |
 
-Any failure in the real path — missing SDK, bad key, rate limit, network —
-falls back to the mock rather than raising. `analyze_text()` never throws.
+Providers are tried in order and the mock is the final backstop, so a dead
+key, an exhausted quota or no network degrades the *result* rather than
+failing the request. `analyze_text()` never throws.
 
-To enable the real path, copy `backend/.env.example` to `backend/.env` and set
-`ANTHROPIC_API_KEY`. `/health` then reports `"ai_provider": "claude"`.
+To enable a real provider, copy `backend/.env.example` to `backend/.env` and
+set a key. A free Google AI Studio key (aistudio.google.com, no card) is
+enough. `/health` then reports `"ai_provider": "gemini"`.
+
+**Free-tier quota is per model, per day, and small** (as little as 20
+requests/day/model). `GEMINI_MODEL` is therefore a comma-separated chain —
+on a 429 the next model is tried, which multiplies usable quota without
+billing. Calls are also paced by `GEMINI_MIN_INTERVAL` to respect the
+per-minute limit.
+
+Language codes are normalised to ISO 639-1 on the way out of every provider:
+models answer `"Hindi"` about as often as `"hi"`, and a mixed corpus would
+render two different badges for one language.
 
 **Be aware of what the mock does and does not do.** Measured against the 25
 ground-truth seed templates, split by script:

@@ -26,7 +26,7 @@ Then confirm, in this order:
 
 - [ ] http://localhost:8000/health returns `"database":"connected"`
 - [ ] http://localhost:5173 loads, **map tiles render** (needs internet — check on venue wifi)
-- [ ] Header shows `AI: mock` (or `AI: claude` if a key is set)
+- [ ] Header shows **`AI: gemini`** (falls back to `mock` if quota is spent)
 - [ ] Browser zoom at 100%, dashboard tab already open
 - [ ] Clear browser storage so "My reports" starts empty
 - [ ] Have the Hindi sample ready to paste (below) — **do not type it live**
@@ -155,17 +155,16 @@ Click **No, still broken**.
 ## 3. Questions you will get, and honest answers
 
 **"Is the AI actually doing anything, or is this hardcoded?"**
-> Language detection and classification run on every complaint. Right now they
-> run through a deterministic keyword analyser — the mock. The real path is one
-> structured Claude call behind the same interface, and it activates when an API
-> key is set. We built it to degrade gracefully so the demo can't die on a
-> network failure.
+> Yes. One structured model call per complaint does language detection,
+> translation and classification together. Behind it sits a deterministic
+> keyword analyser as a fallback, so an exhausted quota or a dead network
+> degrades the result instead of breaking the demo.
 
 **"Are the translations real?"**
-> No — be straight about this. The English text next to seeded complaints is
-> authored seed data. The mock cannot translate; it marks its output so it can't
-> masquerade as a translation. With an API key, translation is real. What *is*
-> real without a key is language detection and classification — 100% on both.
+> The live ones are — every complaint you submit is translated by the model, in
+> native or romanised script. The English beside the *seeded* historical
+> complaints is authored seed data, not model output. Say "seeded historical
+> data" for those and demonstrate a live one.
 
 **"Does it handle native script, or only romanised?"**
 > Both, and it tells them apart. Native script is detected by counting
@@ -211,6 +210,7 @@ Click **No, still broken**.
 | Blank map, markers still visible | No internet for OSM tiles | Keep going — the ranking and explanation carry the demo |
 | Dashboard shows API down | Backend died | Restart uvicorn, reload page |
 | Numbers differ from this script | DB reseeded mid-session | Reseed with `--reset` and reload |
+| Header flips to `AI: mock` | Daily free quota spent | Still fully functional — say so plainly; classification is unaffected |
 | Submit button disabled | Text under 5 characters | Paste the sample |
 | "Analyse N pending" button visible | 11 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
 
