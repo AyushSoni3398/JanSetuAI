@@ -29,6 +29,8 @@ Then confirm, in this order:
 - [ ] Header shows **`AI: gemini`** (falls back to `mock` if quota is spent)
 - [ ] Browser zoom at 100%, `/dashboard` already open in a tab
 - [ ] Clear browser storage so "My reports" starts empty
+- [ ] **Run the demo in Chrome or Edge, not Brave** - Brave blocks the browser
+      speech service, so voice input cannot work there (the page says so)
 - [ ] **Grant microphone permission now** - open `/report`, click "Speak your
       complaint", allow the prompt, and check a spoken Hindi line transcribes.
       Never let the permission dialog appear for the first time on stage.
@@ -219,7 +221,8 @@ Click **No, still broken**.
 | Numbers differ from this script | DB reseeded mid-session | Reseed with `--reset` and reload |
 | Header flips to `AI: mock` | Daily free quota spent | Still fully functional — say so plainly; classification is unaffected |
 | Submit button disabled | Text under 5 characters | Paste the sample |
-| Mic button does nothing | Permission blocked, or no internet | Say so and type instead - the pipeline is identical |
+| Voice shows a Brave warning | Running in Brave | Switch to Chrome/Edge, or type - the pipeline is identical |
+| Mic button does nothing | Permission blocked, or no internet | Say so and type instead |
 | "Analyse N pending" button visible | 11 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
 
 **Golden rule:** if a piece breaks, skip it and go to the explanation panel.

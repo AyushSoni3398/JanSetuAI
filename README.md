@@ -188,9 +188,16 @@ transcribed into **native script**, which feeds straight into the script
 handling above. The transcript lands in the same textarea, so it can be
 corrected before submitting and the rest of the pipeline is unchanged.
 
-This is the browser's engine, **not Bhashini and not a model we run**. It
-requires an internet connection and works in Chrome, Edge and Brave; where
-the API is missing the control is not rendered and typing still works.
+This is the browser's engine, **not Bhashini and not a model we run**. It needs
+an internet connection and works in Chrome and Edge.
+
+**Brave is a special case worth knowing about:** it ships the
+`webkitSpeechRecognition` object but blocks the speech service behind it, so
+feature detection passes while every attempt fails with a `network` error.
+The app therefore identifies Brave directly via `navigator.brave.isBrave()`
+and explains the situation instead of showing a misleading error. Where the
+API is absent entirely (Firefox, Safari) the control is not rendered at all.
+Typing works identically in every browser.
 
 ### The analysis call
 
