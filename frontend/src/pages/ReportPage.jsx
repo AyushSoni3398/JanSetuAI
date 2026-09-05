@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useData } from "../DataContext.jsx";
+import VoiceInput from "../components/VoiceInput.jsx";
 import { addMyComplaint } from "../myReports.js";
 
 const SAMPLES = [
@@ -151,7 +152,15 @@ export default function ReportPage() {
           className="mt-1 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-blue-500 focus:outline-none"
         />
 
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        {/* Speech lands in the same textarea, so the citizen can correct it
+            before submitting and the rest of the pipeline is unchanged. */}
+        <VoiceInput
+          onTranscript={(spoken) =>
+            setText((current) => (current ? current + " " + spoken : spoken))
+          }
+        />
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-slate-500">Try:</span>
           {SAMPLES.map(([label, sample]) => (
             <button
