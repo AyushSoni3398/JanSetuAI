@@ -6,7 +6,7 @@ so the SQLite -> Postgres swap stays a DATABASE_URL change.
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -88,6 +88,15 @@ class Complaint(Base):
     )
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow, index=True
+    )
+
+    # --- Citizen verification (M10) ---
+    # Tri-state, and the None matters: None = the citizen has not responded yet,
+    # True = they confirmed the fix, False = they say it is still broken. A
+    # plain boolean would make "not asked" indistinguishable from "disputed".
+    citizen_verified: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     district: Mapped["District | None"] = relationship(back_populates="complaints")

@@ -166,6 +166,7 @@ export default function App() {
           <ComplaintFeed
             complaints={visibleComplaints}
             districtName={selected?.district.name}
+            onChanged={load}
           />
         </div>
       </main>

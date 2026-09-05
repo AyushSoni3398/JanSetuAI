@@ -16,8 +16,11 @@ from app.schemas import (
     BatchAnalysisResult,
     ComplaintCreate,
     ComplaintOut,
+    StatusUpdate,
+    VerificationUpdate,
+    WorkflowOut,
 )
-from app.services import ai_service, duplicate_service
+from app.services import ai_service, duplicate_service, workflow_service
 
 router = APIRouter(prefix="/complaints", tags=["complaints"])
 
@@ -156,3 +159,60 @@ def analyze_pending(
         provider=provider,
         remaining_unanalyzed=remaining,
     )
+
+
+def _workflow_out(complaint: Complaint) -> WorkflowOut:
+    return WorkflowOut(
+        complaint=ComplaintOut.model_validate(complaint),
+        allowed_transitions=workflow_service.allowed_transitions(complaint.status),
+    )
+
+
+def _get_or_404(db: Session, complaint_id: int) -> Complaint:
+    complaint = db.get(Complaint, complaint_id)
+    if complaint is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Complaint {complaint_id} not found",
+        )
+    return complaint
+
+
+@router.patch("/{complaint_id}/status", response_model=WorkflowOut)
+def update_status(
+    complaint_id: int, payload: StatusUpdate, db: Session = Depends(get_db)
+):
+    """Move a complaint along the workflow (policymaker action)."""
+    complaint = _get_or_404(db, complaint_id)
+    try:
+        workflow_service.set_status(complaint, payload.status)
+    except workflow_service.WorkflowError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+    db.commit()
+    db.refresh(complaint)
+    return _workflow_out(complaint)
+
+
+@router.post("/{complaint_id}/verify", response_model=WorkflowOut)
+def verify_complaint(
+    complaint_id: int, payload: VerificationUpdate, db: Session = Depends(get_db)
+):
+    """Citizen confirms or disputes a claimed fix.
+
+    A disputed fix reopens the complaint - this is the loop that stops
+    'Resolved' from being purely the department's own word.
+    """
+    complaint = _get_or_404(db, complaint_id)
+    try:
+        workflow_service.verify(complaint, payload.confirmed)
+    except workflow_service.WorkflowError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+    db.commit()
+    db.refresh(complaint)
+    return _workflow_out(complaint)

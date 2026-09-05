@@ -56,6 +56,11 @@ class ComplaintOut(BaseModel):
     status: str
     timestamp: datetime
 
+    # Citizen verification: None = not yet answered, True = fix confirmed,
+    # False = citizen says it is still broken.
+    citizen_verified: bool | None
+    verified_at: datetime | None
+
 
 class DistrictOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -114,3 +119,22 @@ class DistrictPriorityOut(BaseModel):
 
     top_factor: str = Field(description="Name of the largest single driver")
     factors: list[FactorOut]
+
+
+class StatusUpdate(BaseModel):
+    """Policymaker moving a complaint along the workflow."""
+
+    status: str = Field(description="Received, Under Review, Funded or Resolved")
+
+
+class VerificationUpdate(BaseModel):
+    """Citizen responding to a claimed fix."""
+
+    confirmed: bool = Field(description="True if the problem is genuinely fixed")
+
+
+class WorkflowOut(BaseModel):
+    """A complaint plus the transitions currently available from its status."""
+
+    complaint: ComplaintOut
+    allowed_transitions: list[str]

@@ -123,6 +123,20 @@ def seed(reset: bool = False) -> None:
                     ),
                 )
 
+                # Some already-Resolved complaints carry a citizen verdict, so
+                # the dashboard shows all three states (unanswered / confirmed /
+                # disputed) rather than an empty column.
+                if c.status == "Resolved":
+                    verdict = rng.choices([True, False, None], weights=[0.6, 0.2, 0.2])[0]
+                    if verdict is not None:
+                        c.citizen_verified = verdict
+                        c.verified_at = c.timestamp + timedelta(days=rng.randint(1, 5))
+                        # A disputed fix reopens the complaint - seeding it as
+                        # "Resolved but disputed" would create a state the
+                        # workflow itself can never produce.
+                        if verdict is False:
+                            c.status = "Under Review"
+
                 if analysed:
                     c.language = lang
                     c.translated_text = english
