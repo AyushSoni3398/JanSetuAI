@@ -1,56 +1,166 @@
-import { useEffect, useState } from "react";
-
-const API_BASE = "http://localhost:8000";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { api } from "./api.js";
+import CategoryChart from "./components/CategoryChart.jsx";
+import ComplaintFeed from "./components/ComplaintFeed.jsx";
+import DistrictMap from "./components/DistrictMap.jsx";
+import PriorityTable from "./components/PriorityTable.jsx";
+import StatCards from "./components/StatCards.jsx";
 
 export default function App() {
   const [health, setHealth] = useState(null);
+  const [priorities, setPriorities] = useState([]);
+  const [complaints, setComplaints] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/health`)
-      .then((res) => res.json())
-      .then(setHealth)
-      .catch((err) => setError(err.message));
+  const load = useCallback(async () => {
+    try {
+      const [h, p, c] = await Promise.all([
+        api.health(),
+        api.priorities(),
+        api.complaints(),
+      ]);
+      setHealth(h);
+      setPriorities(p);
+      setComplaints(c);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const dbOk = health?.database === "connected";
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function runAnalysis() {
+    setAnalyzing(true);
+    try {
+      await api.analyzePending();
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  // Selecting a district filters the feed and the chart, but never the map or
+  // the ranking - those are the context you are selecting *from*.
+  const selected = priorities.find((p) => p.district.id === selectedId) ?? null;
+  const visibleComplaints = useMemo(
+    () =>
+      selectedId === null
+        ? complaints
+        : complaints.filter((c) => c.district_id === selectedId),
+    [complaints, selectedId]
+  );
+
+  const pending = complaints.filter((c) => c.category === null).length;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-900 text-slate-400">
+        Loading dashboard...
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl bg-slate-800 p-8 shadow-lg">
-        <h1 className="text-2xl font-bold">JanSetu AI</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Citizen complaints into policy signals
-        </p>
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      <header className="border-b border-slate-700 bg-slate-800">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
+          <div>
+            <h1 className="text-lg font-bold">JanSetu AI</h1>
+            <p className="text-xs text-slate-400">
+              Citizen complaints to policy priority signals
+            </p>
+          </div>
 
-        <div className="mt-6 space-y-3 text-sm">
-          <Row
-            label="Backend API"
-            ok={Boolean(health)}
-            value={health ? health.status : error ? "unreachable" : "checking..."}
+          <div className="ml-auto flex flex-wrap items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 text-slate-400">
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${
+                  health ? "bg-green-500" : "bg-red-500"
+                }`}
+              />
+              API {health?.status ?? "down"}
+            </span>
+            <span className="text-slate-400">
+              DB {health?.database ?? "unknown"}
+            </span>
+            <span className="rounded bg-slate-700 px-2 py-1 text-slate-300">
+              AI: {health?.ai_provider ?? "-"}
+            </span>
+
+            {pending > 0 && (
+              <button
+                onClick={runAnalysis}
+                disabled={analyzing}
+                className="rounded bg-blue-600 px-3 py-1.5 font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {analyzing ? "Analysing..." : `Analyse ${pending} pending`}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {error && (
+        <div className="mx-auto mt-3 max-w-7xl rounded border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+          {error} - is the backend running on port 8000?
+        </div>
+      )}
+
+      <main className="mx-auto max-w-7xl space-y-4 px-4 py-4">
+        <StatCards complaints={complaints} priorities={priorities} />
+
+        {selected && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm">
+            <span className="text-slate-400">Filtered to</span>
+            <span className="font-semibold text-slate-100">
+              {selected.district.name}, {selected.district.state}
+            </span>
+            <span className="text-slate-400">
+              rank #{selected.rank} &middot; score {selected.priority_score.toFixed(1)}
+            </span>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="ml-auto rounded bg-slate-700 px-2 py-1 text-xs hover:bg-slate-600"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DistrictMap
+            priorities={priorities}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
-          <Row
-            label="Database"
-            ok={dbOk}
-            value={health ? health.database : error ? "unknown" : "checking..."}
+          <PriorityTable
+            priorities={priorities}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
         </div>
 
-        {error && (
-          <p className="mt-4 text-xs text-red-400">
-            {error} - is the backend running on port 8000?
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, ok, value }) {
-  return (
-    <div className="flex items-center justify-between border-b border-slate-700 pb-2">
-      <span className="text-slate-300">{label}</span>
-      <span className={ok ? "text-green-400" : "text-amber-400"}>{value}</span>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <CategoryChart
+            complaints={visibleComplaints}
+            districtName={selected?.district.name}
+          />
+          <ComplaintFeed
+            complaints={visibleComplaints}
+            districtName={selected?.district.name}
+          />
+        </div>
+      </main>
     </div>
   );
 }

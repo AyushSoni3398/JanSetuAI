@@ -1,0 +1,71 @@
+import { scoreColor } from "./DistrictMap.jsx";
+
+export default function PriorityTable({ priorities, selectedId, onSelect }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
+      <div className="border-b border-slate-700 px-4 py-3">
+        <h2 className="text-sm font-semibold text-slate-200">District priority ranking</h2>
+        <p className="text-xs text-slate-500">
+          Weighted: severity 30%, volume 25%, infrastructure 20%, population 15%, investment 10%
+        </p>
+      </div>
+
+      <div className="max-h-[420px] overflow-y-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="sticky top-0 bg-slate-800 text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-slate-700">
+              <th className="px-3 py-2 font-medium">#</th>
+              <th className="px-3 py-2 font-medium">District</th>
+              <th className="px-3 py-2 text-right font-medium">Issues</th>
+              <th className="px-3 py-2 text-right font-medium">Severity</th>
+              <th className="px-3 py-2 text-right font-medium">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {priorities.map((p) => {
+              const selected = p.district.id === selectedId;
+              return (
+                <tr
+                  key={p.district.id}
+                  onClick={() => onSelect(p.district.id)}
+                  className={`cursor-pointer border-b border-slate-700/50 transition-colors ${
+                    selected ? "bg-slate-700" : "hover:bg-slate-700/40"
+                  }`}
+                >
+                  <td className="px-3 py-2 text-slate-500">{p.rank}</td>
+                  <td className="px-3 py-2">
+                    <div className="font-medium text-slate-100">{p.district.name}</div>
+                    <div className="text-xs text-slate-500">{p.district.state}</div>
+                  </td>
+                  <td className="px-3 py-2 text-right text-slate-300">
+                    {p.complaint_count}
+                    {p.duplicate_reports > 0 && (
+                      <span className="ml-1 text-xs text-slate-500">
+                        +{p.duplicate_reports}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right text-slate-300">
+                    {p.average_severity.toFixed(2)}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <span
+                      className="inline-block min-w-[3rem] rounded px-2 py-0.5 text-right text-xs font-semibold text-slate-900"
+                      style={{ background: scoreColor(p.priority_score) }}
+                    >
+                      {p.priority_score.toFixed(1)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="border-t border-slate-700 px-4 py-2 text-xs text-slate-500">
+        Issues counts distinct problems; +n is repeat reports of the same issue.
+      </div>
+    </div>
+  );
+}
