@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { scoreColor } from "./DistrictMap.jsx";
 
 export default function PriorityTable({ priorities, selectedId, onSelect }) {
@@ -34,7 +35,15 @@ export default function PriorityTable({ priorities, selectedId, onSelect }) {
                 >
                   <td className="px-3 py-2 text-slate-500">{p.rank}</td>
                   <td className="px-3 py-2">
-                    <div className="font-medium text-slate-100">{p.district.name}</div>
+                    {/* Stops the row click so the name opens the district page
+                        rather than only filtering the dashboard. */}
+                    <Link
+                      to={`/districts/${p.district.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-medium text-slate-100 hover:text-blue-400 hover:underline"
+                    >
+                      {p.district.name}
+                    </Link>
                     <div className="text-xs text-slate-500">{p.district.state}</div>
                   </td>
                   <td className="px-3 py-2 text-right text-slate-300">
