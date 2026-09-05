@@ -9,7 +9,7 @@ from app.database import Base, engine
 
 # Importing models registers them on Base.metadata before create_all runs.
 from app import models  # noqa: F401
-from app.routers import complaints
+from app.routers import complaints, districts
 from app.services import ai_service
 
 app = FastAPI(title="JanSetu AI", version="0.1.0")
@@ -27,6 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(complaints.router)
+app.include_router(districts.router)
 
 
 @app.get("/health")

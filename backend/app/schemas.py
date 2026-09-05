@@ -87,3 +87,30 @@ class BatchAnalysisResult(BaseModel):
     duplicates_found: int
     provider: str
     remaining_unanalyzed: int
+
+
+class FactorOut(BaseModel):
+    """One weighted component of a district's priority score."""
+
+    name: str
+    label: str
+    raw_value: float = Field(description="The measured value before normalisation")
+    normalized: float = Field(ge=0, le=1, description="0-1 position within the district set")
+    weight: float
+    contribution: float = Field(description="Points this factor adds to the 0-100 score")
+
+
+class DistrictPriorityOut(BaseModel):
+    """A district with its priority score and the breakdown behind it."""
+
+    district: DistrictOut
+    rank: int
+    priority_score: float = Field(ge=0, le=100)
+
+    complaint_count: int = Field(description="Distinct issues, duplicates excluded")
+    duplicate_reports: int = Field(description="Repeat reports corroborating those issues")
+    average_severity: float
+    analyzed_count: int = Field(description="How many complaints have been AI-analysed")
+
+    top_factor: str = Field(description="Name of the largest single driver")
+    factors: list[FactorOut]
