@@ -5,9 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.config import settings
-from app.database import engine
+from app.database import Base, engine
+
+# Importing models registers them on Base.metadata before create_all runs.
+from app import models  # noqa: F401
 
 app = FastAPI(title="JanSetu AI", version="0.1.0")
+
+# No Alembic for the hackathon: tables are created at import time if missing.
+# create_all is a no-op for tables that already exist and never alters columns.
+Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
