@@ -14,11 +14,28 @@ const SpeechRecognition =
 
 export const speechSupported = Boolean(SpeechRecognition);
 
+// Brave ships the API object but blocks the speech service behind it, so it
+// always fails with a "network" error and never returns a result. Feature
+// detection therefore passes while the feature does not work - the browser has
+// to be identified directly. navigator.brave.isBrave() is async and only
+// exists in Brave.
+export async function isBraveBrowser() {
+  try {
+    return Boolean(await navigator.brave?.isBrave?.());
+  } catch {
+    return false;
+  }
+}
+
 const ERROR_MESSAGES = {
   "not-allowed": "Microphone access was blocked. Allow it in the address bar and try again.",
   "service-not-allowed": "Microphone access was blocked by the browser.",
   "no-speech": "Nothing was heard. Try again and speak a little louder.",
-  network: "Speech recognition needs an internet connection.",
+  // "network" is also what Brave returns when it blocks the speech service
+  // entirely, which is far more common than actually being offline.
+  network:
+    "The speech service could not be reached. Brave blocks it entirely - " +
+    "open this page in Chrome or Edge, or check your connection.",
   aborted: null, // user stopped deliberately - not an error worth showing
   "audio-capture": "No microphone was found.",
 };

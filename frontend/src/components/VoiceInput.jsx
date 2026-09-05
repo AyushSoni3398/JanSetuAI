@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useSpeechRecognition } from "../useSpeechRecognition.js";
+import { useEffect, useState } from "react";
+import { isBraveBrowser, useSpeechRecognition } from "../useSpeechRecognition.js";
 
 // Recognition needs to be told which language to expect - it cannot detect that
 // before it listens. The citizen picks once; everything after is automatic.
@@ -32,12 +32,34 @@ function MicIcon({ active }) {
 
 export default function VoiceInput({ onTranscript }) {
   const [language, setLanguage] = useState("hi-IN");
+  const [isBrave, setIsBrave] = useState(false);
   const { supported, listening, interim, error, start, stop } =
     useSpeechRecognition(language);
+
+  useEffect(() => {
+    isBraveBrowser().then(setIsBrave);
+  }, []);
 
   // Not supported in Firefox or Safari. Render nothing rather than a button
   // that cannot work - typing is always available.
   if (!supported) return null;
+
+  // Brave exposes the API but blocks the service behind it. Say so up front
+  // instead of letting the user click and get a confusing network error.
+  if (isBrave) {
+    return (
+      <div className="mt-3 rounded border border-amber-500/30 bg-amber-500/5 p-3">
+        <p className="text-xs font-medium text-amber-300">
+          Voice input is not available in Brave
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+          Brave blocks the browser speech service for privacy, so recognition
+          always fails here. Open this page in Chrome or Edge to speak a
+          complaint. Typing works exactly the same in every browser.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-3 rounded border border-slate-700 bg-slate-900/40 p-3">
