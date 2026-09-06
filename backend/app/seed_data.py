@@ -11,18 +11,27 @@ If the scoring function is correct, the underserved tier must rise to the top.
 That is what makes the M9 "why this area" explanation demonstrable.
 """
 
-# (name, state, lat, lon, population, infrastructure_index, current_investment_cr, tier)
+# (name, state, lat, lon, population, infrastructure_index, investment_cr,
+#  tier, languages)
+#
+# `languages` lists the codes a complaint from that district plausibly arrives
+# in. Assigning templates at random across all districts produced Tamil
+# complaints in Bihar, which any Indian reviewer would spot immediately.
+# English appears everywhere because it is the common administrative language.
 DISTRICTS = [
-    ("Muzaffarpur", "Bihar",          26.1225, 85.3906, 4801062, 28.4,  95.0,  "underserved"),
-    ("Balangir",    "Odisha",         20.7075, 83.4846, 1648997, 31.2,  78.0,  "underserved"),
-    ("Chitrakoot",  "Uttar Pradesh",  25.2000, 80.9000,  991730, 34.6, 110.0,  "underserved"),
-    ("Ranchi",      "Jharkhand",      23.3441, 85.3096, 2914253, 47.3, 210.0,  "moderate"),
-    ("Guwahati",    "Assam",          26.1445, 91.7362, 1116267, 51.9, 265.0,  "moderate"),
-    ("Jaipur",      "Rajasthan",      26.9124, 75.7873, 3073350, 58.1, 410.0,  "moderate"),
-    ("Nagpur",      "Maharashtra",    21.1458, 79.0882, 2405665, 62.5, 340.0,  "moderate"),
-    ("Surat",       "Gujarat",        21.1702, 72.8311, 4467797, 71.6, 580.0,  "well_served"),
-    ("Coimbatore",  "Tamil Nadu",     11.0168, 76.9558, 3458045, 74.2, 540.0,  "well_served"),
-    ("Pune",        "Maharashtra",    18.5204, 73.8567, 9429408, 78.9, 620.0,  "well_served"),
+    ("Muzaffarpur", "Bihar",          26.1225, 85.3906, 4801062, 28.4,  95.0,  "underserved", ["hi", "en"]),
+    ("Balangir",    "Odisha",         20.7075, 83.4846, 1648997, 31.2,  78.0,  "underserved", ["or", "hi", "en"]),
+    ("Chitrakoot",  "Uttar Pradesh",  25.2000, 80.9000,  991730, 34.6, 110.0,  "underserved", ["hi", "en"]),
+    ("Bathinda",    "Punjab",         30.2110, 74.9455, 1388525, 39.8, 140.0,  "underserved", ["pa", "hi", "en"]),
+    ("Ranchi",      "Jharkhand",      23.3441, 85.3096, 2914253, 47.3, 210.0,  "moderate",    ["hi", "en"]),
+    ("Guwahati",    "Assam",          26.1445, 91.7362, 1116267, 51.9, 265.0,  "moderate",    ["bn", "hi", "en"]),
+    ("Warangal",    "Telangana",      17.9689, 79.5941, 1135707, 54.2, 290.0,  "moderate",    ["te", "en"]),
+    ("Jaipur",      "Rajasthan",      26.9124, 75.7873, 3073350, 58.1, 410.0,  "moderate",    ["hi", "en"]),
+    ("Kalaburagi",  "Karnataka",      17.3297, 76.8343, 2566326, 56.4, 320.0,  "moderate",    ["kn", "en"]),
+    ("Nagpur",      "Maharashtra",    21.1458, 79.0882, 2405665, 62.5, 340.0,  "moderate",    ["mr", "hi", "en"]),
+    ("Surat",       "Gujarat",        21.1702, 72.8311, 4467797, 71.6, 580.0,  "well_served", ["gu", "hi", "en"]),
+    ("Coimbatore",  "Tamil Nadu",     11.0168, 76.9558, 3458045, 74.2, 540.0,  "well_served", ["ta", "en"]),
+    ("Pune",        "Maharashtra",    18.5204, 73.8567, 9429408, 78.9, 620.0,  "well_served", ["mr", "en"]),
 ]
 
 CATEGORIES = [
@@ -115,6 +124,109 @@ TEMPLATES += [
     ("ta", "எங்கள் பள்ளிக்கூடம் அருகில் குப்பை குவியல் உள்ளது.",
      "There is a garbage pile near our school.",
      "Sanitation", 4, 3, "frustrated"),
+]
+
+# Complaints in the remaining regional languages, in their own scripts. Same
+# tuple shape as the templates above: (language, raw, english, category,
+# severity, urgency, sentiment).
+TEMPLATES += [
+    # --- Odia (Odisha) ---
+    ("or", "ରାସ୍ତାରେ ବଡ଼ ଗାତ ଅଛି, ପ୍ରତିଦିନ ଦୁର୍ଘଟଣା ଘଟୁଛି।",
+     "There is a large pothole on the road and accidents happen every day.",
+     "Roads", 5, 5, "angry"),
+    ("or", "ଆମ ଗାଁରେ ପାଣି ସରବରାହ ବନ୍ଦ ଅଛି, ସମସ୍ତେ ଅସୁବିଧାରେ ଅଛନ୍ତି।",
+     "The water supply in our village has stopped and everyone is suffering.",
+     "Water Supply", 5, 5, "angry"),
+    ("or", "ଡାକ୍ତରଖାନାରେ ଡାକ୍ତର ନାହାନ୍ତି, ରୋଗୀମାନେ ବହୁ ଦୂର ଯିବାକୁ ପଡ଼ୁଛି।",
+     "There is no doctor at the hospital and patients must travel far.",
+     "Healthcare", 5, 5, "concerned"),
+    ("or", "ନର୍ଦ୍ଦମାର ମଇଳା ପାଣି ରାସ୍ତାରେ ବୋହୁଛି, ରୋଗ ବ୍ୟାପୁଛି।",
+     "Dirty drain water is flowing on the road and disease is spreading.",
+     "Drainage", 5, 4, "angry"),
+
+    # --- Punjabi (Punjab) ---
+    ("pa", "ਸੜਕ ਵਿੱਚ ਵੱਡੇ ਟੋਏ ਹਨ, ਹਰ ਰੋਜ਼ ਹਾਦਸੇ ਹੋ ਰਹੇ ਹਨ।",
+     "There are large potholes in the road and accidents happen every day.",
+     "Roads", 5, 5, "angry"),
+    ("pa", "ਦੋ ਹਫ਼ਤਿਆਂ ਤੋਂ ਨਲਕੇ ਵਿੱਚ ਪਾਣੀ ਨਹੀਂ ਆਇਆ।",
+     "There has been no water in the taps for two weeks.",
+     "Water Supply", 4, 4, "frustrated"),
+    ("pa", "ਬਿਜਲੀ ਹਰ ਰੋਜ਼ ਚਲੀ ਜਾਂਦੀ ਹੈ, ਬੱਚੇ ਪੜ੍ਹ ਨਹੀਂ ਸਕਦੇ।",
+     "Electricity goes out every day and children cannot study.",
+     "Electricity", 4, 4, "frustrated"),
+
+    # --- Telugu (Telangana) ---
+    ("te", "రోడ్డు మీద పెద్ద గుంతలు ఉన్నాయి, ప్రతిరోజూ ప్రమాదాలు జరుగుతున్నాయి.",
+     "There are large potholes on the road and accidents happen every day.",
+     "Roads", 4, 4, "frustrated"),
+    ("te", "మా ప్రాంతంలో చెత్త చాలా రోజులుగా తీయలేదు.",
+     "Garbage has not been collected in our area for many days.",
+     "Sanitation", 3, 3, "frustrated"),
+    ("te", "వీధి దీపాలు పని చేయడం లేదు, రాత్రి బయటకు వెళ్లడం ప్రమాదకరం.",
+     "The street lights are not working and going out at night is dangerous.",
+     "Street Lighting", 3, 3, "concerned"),
+
+    # --- Kannada (Karnataka) ---
+    ("kn", "ರಸ್ತೆಯಲ್ಲಿ ದೊಡ್ಡ ಗುಂಡಿಗಳಿವೆ, ದಿನವೂ ಅಪಘಾತಗಳು ಆಗುತ್ತಿವೆ.",
+     "There are large potholes on the road and accidents happen daily.",
+     "Roads", 4, 4, "frustrated"),
+    ("kn", "ಆಸ್ಪತ್ರೆಯಲ್ಲಿ ವೈದ್ಯರು ಇಲ್ಲ, ರೋಗಿಗಳು ದೂರ ಹೋಗಬೇಕಾಗಿದೆ.",
+     "There is no doctor at the hospital and patients must travel far.",
+     "Healthcare", 5, 5, "concerned"),
+    ("kn", "ಬಸ್ ಸೌಲಭ್ಯ ಇಲ್ಲ, ವೃದ್ಧರು ಆಸ್ಪತ್ರೆಗೆ ಹೋಗಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+     "There is no bus service, so elderly people cannot reach the hospital.",
+     "Public Transport", 4, 4, "concerned"),
+
+    # --- Gujarati (Gujarat) ---
+    ("gu", "રસ્તા પર મોટા ખાડા છે, રોજ અકસ્માત થાય છે.",
+     "There are large potholes on the road and accidents happen daily.",
+     "Roads", 4, 4, "frustrated"),
+    ("gu", "અમારા વિસ્તારમાં પાણી અનિયમિત આવે છે.",
+     "Water comes irregularly in our area.",
+     "Water Supply", 3, 3, "frustrated"),
+    ("gu", "શેરીની લાઇટ સારી થઈ ગઈ છે, હવે વાંધો નથી.",
+     "The street light has been repaired and there is no problem now.",
+     "Street Lighting", 1, 1, "positive"),
+]
+
+# Low-severity complaints for every regional language. Without these, a
+# well-served district in a non-Hindi state draws only English templates -
+# Coimbatore ended up with no Tamil complaints at all, because every Tamil
+# template was severity 3 or above.
+TEMPLATES += [
+    ("ta", "பேருந்து நேரம் சற்று சீராக இருந்தால் நல்லது.",
+     "It would be good if the bus timings were a little more regular.",
+     "Public Transport", 2, 2, "neutral"),
+    ("ta", "சாலை சமீபத்தில் சரிசெய்யப்பட்டது, இப்போது நன்றாக உள்ளது.",
+     "The road was repaired recently and is in good condition now.",
+     "Roads", 1, 1, "positive"),
+    ("or", "ରାସ୍ତା ମରାମତି ହୋଇଛି, ବର୍ତ୍ତମାନ ଭଲ ଅଛି।",
+     "The road has been repaired and is fine now.",
+     "Roads", 1, 1, "positive"),
+    ("or", "ଆଲୋକ ବେଳେବେଳେ ଲିଭିଯାଏ, ମାତ୍ର ଅଧିକାଂଶ ସମୟ କାମ କରେ।",
+     "The light goes out occasionally but mostly works.",
+     "Street Lighting", 2, 2, "neutral"),
+    ("pa", "ਸੜਕ ਦੀ ਮੁਰੰਮਤ ਹੋ ਗਈ ਹੈ, ਹੁਣ ਠੀਕ ਹੈ।",
+     "The road has been repaired and is fine now.",
+     "Roads", 1, 1, "positive"),
+    ("te", "బస్సు సమయాలు కొద్దిగా మెరుగుపడితే బాగుంటుంది.",
+     "It would be better if the bus timings improved slightly.",
+     "Public Transport", 2, 2, "neutral"),
+    ("kn", "ರಸ್ತೆ ಇತ್ತೀಚೆಗೆ ದುರಸ್ತಿಯಾಗಿದೆ, ಈಗ ಚೆನ್ನಾಗಿದೆ.",
+     "The road was repaired recently and is good now.",
+     "Roads", 1, 1, "positive"),
+    ("kn", "ನೀರಿನ ಸಮಯ ಸ್ವಲ್ಪ ಅನಿಯಮಿತವಾಗಿದೆ.",
+     "The water timings are slightly irregular.",
+     "Water Supply", 2, 2, "neutral"),
+    ("bn", "রাস্তাটি সম্প্রতি মেরামত হয়েছে, এখন ভালো আছে।",
+     "The road was repaired recently and is fine now.",
+     "Roads", 1, 1, "positive"),
+    ("mr", "रस्ता नुकताच दुरुस्त झाला आहे, आता चांगला आहे.",
+     "The road was repaired recently and is good now.",
+     "Roads", 1, 1, "positive"),
+    ("gu", "બસની આવૃત્તિ થોડી સારી થઈ શકે.",
+     "The bus frequency could be a little better.",
+     "Public Transport", 2, 2, "neutral"),
 ]
 
 LOCATIONS = [
