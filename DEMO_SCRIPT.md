@@ -1,14 +1,18 @@
 # JanSetu AI — Demo Script
 
-Three-minute live demo. Numbers below match a freshly seeded database
-(`RANDOM_SEED = 20260906`), so they are stable across reruns — **reseed before
-you present** and they will be exactly these.
+Three-minute live demo, plus prepared answers.
+
+Numbers below come from a freshly seeded database (`RANDOM_SEED = 20260906`).
+**Reseed before you present** and the ranking will be exactly these. Scores
+shift by a point or two once a live AI provider analyses the pending queue or
+someone submits during the demo — that is expected, so quote scores as
+approximate ("about 90") rather than reading decimals aloud.
 
 ---
 
-## 1. Pre-demo checklist (do this 10 minutes before)
+## 1. Pre-demo checklist
 
-Reset to a clean state and start both servers:
+### Reset and start
 
 ```bash
 cd C:\Users\ayush\JanSetuAI\JanSetuAI\backend; ..\.venv\Scripts\python.exe -m app.seed --reset
@@ -22,30 +26,36 @@ cd C:\Users\ayush\JanSetuAI\JanSetuAI\backend; ..\.venv\Scripts\python.exe -m uv
 cd C:\Users\ayush\JanSetuAI\JanSetuAI\frontend; npm run dev
 ```
 
-Then confirm, in this order:
+### Confirm, in this order
 
-- [ ] http://localhost:8000/health returns `"database":"connected"`
-- [ ] http://localhost:5173 loads, **map tiles render** (needs internet — check on venue wifi)
-- [ ] Header shows **`AI: gemini`** (falls back to `mock` if quota is spent)
-- [ ] Browser zoom at 100%, `/dashboard` already open in a tab
-- [ ] Clear browser storage so "My reports" starts empty
-- [ ] **Run the demo in Chrome or Edge, not Brave** - Brave blocks the browser
-      speech service, so voice input cannot work there (the page says so)
-- [ ] **Grant microphone permission now** - open `/report`, click "Speak your
-      complaint", allow the prompt, and check a spoken Hindi line transcribes.
-      Never let the permission dialog appear for the first time on stage.
-- [ ] Have the Hindi sample ready to paste (below) — **do not type it live**
+- [ ] **Use Chrome or Edge, not Brave** — Brave blocks the speech service, so voice input cannot work there
+- [ ] http://localhost:8000/health returns `"database":"connected"` and `"ai_provider":"gemini"`
+- [ ] http://localhost:5173 loads and **map tiles render** (needs internet — test on venue wifi)
+- [ ] Header shows **`AI: gemini`** (falls back to `mock` if the daily quota is spent — still fully functional)
+- [ ] **Grant microphone permission now** — open `/report`, click "Speak your complaint", allow the prompt. Never let that dialog appear first on stage
+- [ ] Browser storage cleared so "My reports" starts empty
+- [ ] Tabs pre-opened: `/`, `/dashboard`, `/recommendations`, `/report`
 
-**Complaint to paste** (romanised Hindi):
+### If you are demoing live WhatsApp
 
+- [ ] Cloudflare tunnel running, and its URL saved in Twilio's sandbox settings
+- [ ] `curl <tunnel-url>/health` returns 200 **right before you present**
+- [ ] Test message sent and answered
+
+⚠️ **The tunnel URL changes every restart.** If cloudflared restarts or the
+machine sleeps, re-paste the new URL into Twilio or WhatsApp silently stops
+working.
+
+### Have these ready to paste — do not type them live
+
+Romanised Hindi:
 ```
 Hamare gaon me hospital me daktar nahi hai, log door jaate hain aur bimari fail rahi hai.
 ```
 
-**Optional second complaint** (native Devanagari — shows both scripts work):
-
+Native Devanagari:
 ```
-हमारे गाँव के अस्पताल में डॉक्टर नहीं है, बीमारी फैल रही है।
+नाली का गंदा पानी सड़क पर बह रहा है, बीमारी फैल रही है।
 ```
 
 ---
@@ -54,19 +64,19 @@ Hamare gaon me hospital me daktar nahi hai, log door jaate hain aur bimari fail 
 
 ### 0:00 – 0:20 — The problem
 
-> "Citizens report infrastructure problems in dozens of languages. Those
-> complaints pile up as unstructured text, and nobody can answer the question a
-> policymaker actually needs answered: *where should the next rupee go?*
-> JanSetu turns complaints into a priority signal."
+> "Citizens across India report infrastructure problems in a dozen languages,
+> through whatever channel they already use. Those reports sit in fragmented
+> systems, and nobody can answer the question a policymaker actually needs
+> answered: *where should the next rupee go, and what should it build?*"
 
-### 0:20 – 0:55 — Citizen side
+### 0:20 – 0:55 — Citizen side, and the hard input
 
-Go to **Report an issue** (`/report`). Paste the Hindi complaint. Choose
-district **Balangir, Odisha**. Click **Submit report**.
+Open **`/report`**. Paste the **romanised Hindi**. District **Muzaffarpur, Bihar**. Submit.
 
-> "A citizen writes in their own language — this is romanised Hindi. One
-> submission, and the system detects the language and classifies it in a single
-> pass."
+> "This is Hindi typed in Roman letters — how most people actually type on a
+> phone. Standard translation engines can't parse this at all; they expect
+> Devanagari. One submission, and the language, translation and classification
+> come back in a single pass."
 
 Point at the analysis card:
 
@@ -74,164 +84,188 @@ Point at the analysis card:
 |---|---|
 | Language | `hi` |
 | Category | `Healthcare` |
-| Severity | `5 / 5` |
-| Urgency | `5 / 5` |
+| Severity | `4–5 / 5` |
+| English | *"There is no doctor in the hospital in our village…"* |
 
-> "Detected Hindi, classified as Healthcare, severity five out of five — nobody
-> tagged that by hand."
+**Optional, 10 seconds:** paste the Devanagari sample to show native script
+works too, or click **Speak your complaint** and say it aloud.
 
-### 0:55 – 1:40 — Policymaker side
+### 0:55 – 1:35 — Policymaker side
 
-Click **Dashboard** (`/dashboard`).
+Open **`/dashboard`**.
 
-> "Now the same data from the government's side. 135 complaints, ten districts,
-> five languages, in both native and romanised script."
+> "894 complaints, ten districts, five languages, arriving through three
+> channels — web, voice and WhatsApp."
 
 Point at the map.
 
-> "Red is urgent, green is well-served, and circle size scales with priority.
-> The hotspots are Bihar, Odisha and Uttar Pradesh — the system found those, we
-> didn't place them."
+> "Red is urgent, green is well served, and circle size scales with priority.
+> Bihar, Odisha and Uttar Pradesh surfaced on their own — we didn't place them."
 
-Point at the ranking table.
+Point at the ranking.
 
 | # | District | Score | Issues | Avg severity | Infra index |
 |---|---|---|---|---|---|
-| 1 | Balangir, Odisha | **83.8** | 18 | 4.44 | 31.2 |
-| 2 | Muzaffarpur, Bihar | **81.6** | 15 | 4.08 | 28.4 |
-| 3 | Chitrakoot, UP | **73.8** | 16 | 4.38 | 34.6 |
+| 1 | Muzaffarpur, Bihar | **89.6** | 135 (+18) | 4.37 | 28.4 |
+| 2 | Balangir, Odisha | **83.1** | 146 (+18) | 4.32 | 31.2 |
+| 3 | Chitrakoot, UP | **76.7** | 139 (+17) | 4.35 | 34.6 |
 | … | | | | | |
-| 8 | Pune, Maharashtra | 27.8 | 5 | 2.40 | 78.9 |
-| 10 | Coimbatore, Tamil Nadu | 13.1 | 5 | 2.25 | 74.2 |
+| 8 | Pune, Maharashtra | 25.4 | 24 (+10) | 2.33 | 78.9 |
+| 10 | Coimbatore, Tamil Nadu | 10.6 | 20 (+14) | 2.25 | 74.2 |
 
-> "Weighted score: severity 30%, volume 25%, infrastructure 20%, population 15%,
-> investment 10%. Complaint volume alone would be misleading — we count distinct
-> problems, not repeat reports, so one loud issue can't outrank a district with
-> many real ones."
+> "Severity 30%, volume 25%, infrastructure 20%, population 15%, investment
+> 10%. Note the `+18` — those are repeat reports. Ten reports of one pothole
+> are one problem, not ten, so duplicates count as corroboration, never volume.
+> Otherwise the loudest area wins instead of the worst-off one."
 
-### 1:40 – 2:20 — The differentiator: why this area
+### 1:35 – 2:10 — Why this area
 
-Click **Balangir** in the table &mdash; this opens its own page at
-`/districts/2`, which is a shareable link.
-
-> "This is the part that matters. The score isn't a black box."
+Click **Muzaffarpur** — it opens its own page at `/districts/1`, a shareable link.
 
 | Factor | Points | Raw |
 |---|---|---|
-| Average severity | **30.0** | 4.44 / 5 |
-| Distinct issues | **25.0** | 18 |
-| Infrastructure shortfall | **18.9** | index 31.2 / 100 |
-| Investment per person | 8.7 | ₹47.30 |
-| Population | 1.2 | 1,648,997 |
+| Average severity | **30.0** | 4.37 / 5 |
+| Distinct issues | **22.9** | 135 |
+| Infrastructure shortfall | **20.0** | index 28.4 / 100 |
+| Investment per person | 10.0 | ₹19.79 |
+| Population | 6.8 | 4,801,062 |
 
-> "Balangir is first because it maxes out the two heaviest factors — the most
-> severe problems in the set, and the most of them. Population barely
-> contributes: it is a small district."
+> "The score isn't a black box. Muzaffarpur is first because it maxes out
+> severity and has the worst infrastructure index in the set — and note the
+> investment figure: ₹19.79 per person. In absolute rupees Muzaffarpur has more
+> money than Balangir. Per head it has the least. Absolute spending would have
+> hidden that completely."
 
-Now click **Pune** — this contrast is the strongest 15 seconds of the demo.
+Now open **Pune** — the strongest 15 seconds of the demo.
 
-> "Pune scores 28 — and look, volume and infrastructure contribute **zero**,
-> because Pune is the best in the set on both. Its score is almost entirely
-> population and low per-head investment. Same formula, opposite explanation.
-> A department head can argue with this. They can't argue with a number."
+> "Pune scores 25. Infrastructure contributes **zero**, severity and volume
+> almost nothing, because Pune is the best in the set on all three. Its whole
+> score is population and low per-head investment. Same formula, opposite
+> explanation. A department can argue with this. They can't argue with a number."
 
-### 2:20 – 2:50 — Closing the loop
+### 2:10 – 2:40 — What to build
 
-Still on Balangir, find your complaint at the top of the feed (severity 5,
-Healthcare). Click **Mark Resolved**.
+Open **`/recommendations`**.
 
-> "The department acts and marks it resolved."
+> "Ranking districts isn't enough — a policymaker holding a budget needs to know
+> what to build. These are 64 project recommendations derived from clustered
+> complaints. And this part is deterministic: the model classifies individual
+> complaints, but the clustering and ranking are plain Python, so a department
+> can audit every line."
 
-Switch to **Report an issue**.
+| | |
+|---|---|
+| **93.9** | Road resurfacing and pothole repair programme — **Muzaffarpur** |
+| | *36 distinct roads complaints at average severity 4.6/5, corroborated by 3 repeat reports, affecting ~262,145 people* |
+| **91.6** | Primary health centre staffing and equipment — **Balangir** |
+| | *31 distinct healthcare complaints at average severity 5.0/5, ~190,388 people* |
 
-> "But 'resolved' shouldn't be whatever the department says it is."
+### 2:40 – 3:00 — Closing the loop
 
-Click **No, still broken**.
+Back on the district page, find your complaint in the feed. Click **Mark Resolved**.
 
-> "The citizen disputes it — and it reopens automatically, back to Under Review."
+> "The department acts and marks it resolved. But 'resolved' shouldn't be
+> whatever the department says it is."
 
-### 2:50 – 3:00 — Close
+Go to **`/my-reports`**, click **No, still broken**.
 
-> "Complaint in any language, to a ranked priority with a defensible
-> explanation, to action, and back to the citizen who verifies it. That's the
-> loop."
+> "The citizen disputes it and it reopens automatically. Complaint in any
+> language through any channel, to a ranked priority, to a costed project, to
+> action, and back to the citizen who verifies it."
 
 ---
 
-## 3. Questions you will get, and honest answers
+## 3. Optional beats, if you have extra time
 
-**"Is the AI actually doing anything, or is this hardcoded?"**
-> Yes. One structured model call per complaint does language detection,
-> translation and classification together. Behind it sits a deterministic
-> keyword analyser as a fallback, so an exhausted quota or a dead network
-> degrades the result instead of breaking the demo.
+**Live WhatsApp (30s).** Message the Twilio number from your phone; the reply
+comes back with a report number and classification, and it appears on the
+dashboard with a WhatsApp badge. *Only if the tunnel is confirmed working.*
+
+**The AI pass (15s).** The dashboard shows **"Analyse 10 pending"** — click it
+and watch complaints classify live. Takes about a minute with a live provider.
+
+**Voice (20s).** On `/report`, click "Speak your complaint", pick हिन्दी, and
+speak. Chrome or Edge only.
+
+---
+
+## 4. Questions you will get, and honest answers
+
+**"Is the AI actually doing anything?"**
+> Yes — one structured model call per complaint does language detection,
+> translation and classification together. Behind it is a deterministic keyword
+> analyser as a fallback, so an exhausted quota or dead network degrades the
+> result instead of breaking the demo.
 
 **"Are the translations real?"**
-> The live ones are — every complaint you submit is translated by the model, in
-> native or romanised script. The English beside the *seeded* historical
-> complaints is authored seed data, not model output. Say "seeded historical
-> data" for those and demonstrate a live one.
+> The live ones are — anything submitted during this demo is translated by the
+> model. The English beside the *seeded* historical complaints is authored seed
+> data. Say "seeded historical data" for those, and demonstrate a live one.
 
 **"Does it handle native script, or only romanised?"**
-> Both, and it tells them apart. Native script is detected by counting
+> Both, and it tells them apart. Native script is identified by counting
 > characters per Unicode block; romanised text falls through to language-specific
 > word cues. Devanagari carries both Hindi and Marathi, so those are separated by
-> function words. Measured: 25/25 on language and 25/25 on category across both
-> scripts. Standard translation engines can't parse romanised Hindi at all —
-> that is the harder half and we handle it.
+> function words. Measured 25/25 on language and category across both scripts.
 
 **"Why not Bhashini?"**
 > Out of scope for 24 hours. The analysis layer is a swappable interface — a
-> Bhashini backend would implement the same `analyze_text` contract.
+> Bhashini backend implements the same `analyze_text` contract. Voice today uses
+> the browser's own speech recognition, not Bhashini.
 
-**"A score of 84 out of what? Is that absolute need?"**
+**"A score of 90 out of what? Is that absolute need?"**
 > No. Every factor is min-max normalised **across this district set**, so it
 > ranks relative need. The top district always scores near 100 by construction.
 > Add a worse district and every score shifts. The UI says this on every
 > explanation panel.
 
 **"Isn't your seed data engineered to make the scoring look good?"**
-> Yes, deliberately — 10 districts in three tiers so the weighting has a real
+> Yes, deliberately — ten districts in three tiers so the weighting has a real
 > signal to find. It proves the maths is right, not that the model discovered
 > something unknown. Real deployment needs real complaint data.
 
-**"How do you stop one angry person spamming the ranking?"**
-> Duplicate detection. Repeat reports of the same issue are grouped and counted
-> as corroboration, not volume — the table shows `18 +7` for Balangir:
-> eighteen distinct problems, seven repeat reports.
+**"How do you stop one person spamming the ranking?"**
+> Duplicate detection. Repeat reports are grouped and counted as corroboration,
+> not volume — the ranking shows `135 +18`: 135 distinct problems, 18 repeat
+> reports.
 
-**"What about voice and photo intake?"**
-> Voice is built - the browser's own speech recognition, which transcribes Indian
-> languages into their native script and feeds the same pipeline. It is not
-> Bhashini and not a model we run; a production system would swap Bhashini in
-> behind the same interface. Photo intake is not built.
+**"Is this really a Digital Public Good?"**
+> It meets six of the nine DPG Standard requirements and partially meets three.
+> The README has the full table, including the gaps: no formal privacy policy,
+> no bias audit, no accessibility conformance statement. MIT licensed, no vendor
+> lock-in — the AI provider is replaceable and the system works with none at all.
+
+**"What about photo intake?"**
+> Not built. Text, voice and WhatsApp are.
 
 **"Is there authentication?"**
-> No. Deliberately out of scope. "My reports" is browser-local.
+> No, deliberately. "My reports" lives in the citizen's own browser, and the
+> WhatsApp webhook does not store the sender's phone number.
 
 ---
 
-## 4. If something breaks
+## 5. If something breaks
 
-| Symptom | Cause | Fix / say |
+| Symptom | Cause | What to do |
 |---|---|---|
-| `ERR_CONNECTION_REFUSED` | uvicorn not running | Restart it; keep that terminal open |
-| Blank map, markers still visible | No internet for OSM tiles | Keep going — the ranking and explanation carry the demo |
-| Dashboard shows API down | Backend died | Restart uvicorn, reload page |
-| Numbers differ from this script | DB reseeded mid-session | Reseed with `--reset` and reload |
-| Header flips to `AI: mock` | Daily free quota spent | Still fully functional — say so plainly; classification is unaffected |
-| Submit button disabled | Text under 5 characters | Paste the sample |
-| Voice shows a Brave warning | Running in Brave | Switch to Chrome/Edge, or type - the pipeline is identical |
-| Mic button does nothing | Permission blocked, or no internet | Say so and type instead |
-| "Analyse N pending" button visible | 11 complaints unanalysed | That's intentional — clicking it is a fine bonus beat |
+| `ERR_CONNECTION_REFUSED` | uvicorn not running | Restart it; keep the terminal open |
+| Blank map, markers visible | No internet for OSM tiles | Keep going — ranking and explanation carry the demo |
+| Header shows `AI: mock` | Daily free quota spent | Say so plainly; classification is unaffected, only translation |
+| Voice shows a Brave warning | Running in Brave | Switch to Chrome/Edge, or skip the voice beat |
+| Mic does nothing | Permission blocked, or offline | Type instead — the pipeline is identical |
+| WhatsApp gets the default reply | Tunnel URL changed | Re-paste the current tunnel URL into Twilio, or skip the beat |
+| Numbers differ from this script | DB reseeded, or live analysis ran | Expected — quote approximate scores |
+| Submit disabled | Text under 5 characters | Paste a sample |
 
-**Golden rule:** if a piece breaks, skip it and go to the explanation panel.
-That is the strongest part of the product and needs only data already loaded.
+**Golden rule:** if anything breaks, go to the district page and the
+recommendations. Those are the strongest parts and need only data already
+loaded in the browser.
 
 ---
 
-## 5. One-sentence version
+## 6. One-sentence version
 
-> JanSetu turns multilingual citizen complaints into a ranked, explainable
-> district priority signal — and closes the loop by letting the citizen verify
+> JanSetu turns multilingual citizen complaints — typed, spoken, or sent over
+> WhatsApp, in native script or Roman letters — into a ranked, explainable list
+> of development projects, and closes the loop by letting the citizen verify
 > whether the fix actually happened.
