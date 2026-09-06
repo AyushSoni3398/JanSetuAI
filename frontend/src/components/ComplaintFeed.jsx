@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { api } from "../api.js";
 
 const SEVERITY_STYLES = {
@@ -180,39 +180,144 @@ function Row({ complaint, onChanged }) {
   );
 }
 
+const SORTS = {
+  severity: {
+    label: "Most severe",
+    fn: (a, b) =>
+      (b.severity ?? 0) - (a.severity ?? 0) ||
+      new Date(b.timestamp) - new Date(a.timestamp),
+  },
+  newest: { label: "Newest", fn: (a, b) => new Date(b.timestamp) - new Date(a.timestamp) },
+  reports: {
+    label: "Most reported",
+    fn: (a, b) => (b.duplicate_count ?? 0) - (a.duplicate_count ?? 0),
+  },
+};
+
 export default function ComplaintFeed({ complaints, districtName, onChanged }) {
-  // Most severe first, then newest - a policymaker scanning this wants the
-  // worst thing at the top, not the most recent trivial one.
-  const rows = [...complaints]
-    .filter((c) => c.duplicate_of === null)
-    .sort(
-      (a, b) =>
-        (b.severity ?? 0) - (a.severity ?? 0) ||
-        new Date(b.timestamp) - new Date(a.timestamp)
-    )
-    .slice(0, 40);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [status, setStatus] = useState("");
+  const [sort, setSort] = useState("severity");
+  const [limit, setLimit] = useState(40);
+
+  const canonical = useMemo(
+    () => complaints.filter((c) => c.duplicate_of === null),
+    [complaints]
+  );
+
+  const categories = useMemo(
+    () => [...new Set(canonical.map((c) => c.category).filter(Boolean))].sort(),
+    [canonical]
+  );
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return canonical
+      .filter((c) => {
+        if (category && c.category !== category) return false;
+        if (status && c.status !== status) return false;
+        if (!needle) return true;
+        // Search both the original and the translation, so an English speaker
+        // can find a Hindi complaint and vice versa.
+        return (
+          c.text.toLowerCase().includes(needle) ||
+          (c.translated_text ?? "").toLowerCase().includes(needle) ||
+          (c.location_text ?? "").toLowerCase().includes(needle)
+        );
+      })
+      .sort(SORTS[sort].fn);
+  }, [canonical, query, category, status, sort]);
+
+  const rows = filtered.slice(0, limit);
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800">
-      <div className="border-b border-slate-700 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-200">
-          Complaints
-          {districtName && <span className="text-slate-400"> - {districtName}</span>}
-        </h2>
-        <p className="text-xs text-slate-500">
-          Most severe first &middot; showing {rows.length} of {complaints.length}
-        </p>
+      <div className="space-y-2 border-b border-slate-700 px-4 py-3">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <h2 className="text-sm font-semibold text-slate-200">
+            Complaints
+            {districtName && <span className="text-slate-400"> - {districtName}</span>}
+          </h2>
+          <p className="ml-auto text-xs text-slate-500">
+            showing {rows.length} of {filtered.length}
+            {filtered.length !== canonical.length && ` (${canonical.length} total)`}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setLimit(40);
+            }}
+            placeholder="Search text, translation or location..."
+            className="min-w-[12rem] flex-1 rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-200"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-200"
+          >
+            <option value="">All statuses</option>
+            {STATUS_ORDER.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-200"
+          >
+            {Object.entries(SORTS).map(([key, s]) => (
+              <option key={key} value={key}>{s.label}</option>
+            ))}
+          </select>
+          {(query || category || status) && (
+            <button
+              onClick={() => {
+                setQuery("");
+                setCategory("");
+                setStatus("");
+              }}
+              className="rounded border border-slate-600 px-2 py-1 text-xs text-slate-400 hover:bg-slate-700"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="max-h-[520px] divide-y divide-slate-700/50 overflow-y-auto">
         {rows.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-slate-500">
-            No complaints for this selection
+            No complaints match these filters
           </div>
         )}
         {rows.map((c) => (
           <Row key={c.id} complaint={c} onChanged={onChanged} />
         ))}
+
+        {filtered.length > rows.length && (
+          <button
+            onClick={() => setLimit((n) => n + 40)}
+            className="w-full px-4 py-3 text-xs text-slate-400 hover:bg-slate-700/40"
+          >
+            Show {Math.min(40, filtered.length - rows.length)} more
+            <span className="text-slate-600"> ({filtered.length - rows.length} remaining)</span>
+          </button>
+        )}
       </div>
     </div>
   );
