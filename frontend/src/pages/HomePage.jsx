@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useData } from "../DataContext.jsx";
 import { scoreColor } from "../components/DistrictMap.jsx";
+import Reveal from "../components/Reveal.jsx";
 import WhatsAppCta from "../components/WhatsAppCta.jsx";
 
 // Counts up to the value over ~700ms. Purely decorative, and it lands on the
@@ -49,19 +50,35 @@ export default function HomePage() {
   const top = priorities.slice(0, 3);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <section className="text-center">
-        <h2 className="text-3xl font-bold text-slate-50">
-          Every complaint counted. Every priority explained.
+    <main className="relative">
+      {/* Faint grid behind the hero only - it fades out via a mask so it never
+          reaches the content below. */}
+      <div
+        aria-hidden="true"
+        className="grid-backdrop pointer-events-none absolute inset-x-0 top-0 h-[36rem]"
+      />
+
+      <div className="relative mx-auto max-w-5xl px-4 py-16">
+      <Reveal className="text-center">
+        <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-400 backdrop-blur-sm">
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+          Voice, text and WhatsApp &middot; 5 languages &middot; 2 scripts
+        </span>
+        <h2 className="mt-5 text-4xl font-bold tracking-tight text-slate-50 sm:text-5xl">
+          Every complaint counted.
+          <br className="hidden sm:block" />
+          <span className="bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+            Every priority explained.
+          </span>
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-slate-400">
+        <p className="mx-auto mt-4 max-w-2xl text-slate-400">
           Citizens report infrastructure problems in their own language &mdash; in
           native script or typed in Roman letters. JanSetu detects the language,
           classifies the problem, groups repeat reports, and turns the result into
           a district priority ranking that shows its working.
         </p>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             to="/report"
             className="rounded bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-500"
@@ -76,18 +93,18 @@ export default function HomePage() {
             Open the dashboard
           </Link>
         </div>
-      </section>
+      </Reveal>
 
       {!loading && (
         <>
-          <section className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Reveal delay={80} className="mt-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat value={complaints.length} label="complaints" />
             <Stat value={distinct} label="distinct issues" />
             <Stat value={priorities.length} label="districts" />
             <Stat value={languages.size} label="languages" />
-          </section>
+          </Reveal>
 
-          <section className="mt-10">
+          <Reveal delay={120} className="mt-14">
             <h3 className="text-sm font-semibold text-slate-200">
               Highest priority right now
             </h3>
@@ -122,15 +139,15 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
-          </section>
+          </Reveal>
         </>
       )}
 
-      <section className="mt-12">
+      <Reveal className="mt-14">
         <WhatsAppCta />
-      </section>
+      </Reveal>
 
-      <section className="mt-4 grid gap-4 sm:grid-cols-3">
+      <Reveal delay={80} className="mt-4 grid gap-4 sm:grid-cols-3">
         {[
           [
             "Any language, any script",
@@ -145,12 +162,16 @@ export default function HomePage() {
             "Every ranking breaks down into five weighted factors with the raw numbers behind them, so a department can challenge it rather than take it on faith.",
           ],
         ].map(([title, body]) => (
-          <div key={title} className="rounded-lg border border-slate-700 bg-slate-800 p-4">
+          <div
+            key={title}
+            className="rounded-lg border border-slate-700 bg-slate-800/70 p-4 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-slate-500"
+          >
             <h4 className="text-sm font-semibold text-slate-100">{title}</h4>
             <p className="mt-1 text-xs leading-relaxed text-slate-400">{body}</p>
           </div>
         ))}
-      </section>
+      </Reveal>
+      </div>
     </main>
   );
 }
