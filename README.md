@@ -116,6 +116,15 @@ Dashboard at http://localhost:5173
 
 ---
 
+## Deployment
+
+The backend deploys to Render from [`render.yaml`](render.yaml); the frontend
+is a static build for Vercel or Netlify with SPA rewrites already configured.
+Step-by-step instructions, including the CORS step people usually forget, are
+in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
 ## API
 
 | Method | Path | Purpose |
@@ -293,6 +302,7 @@ frontend/
     pages/                  Home, Dashboard, District, Report, MyReports, NotFound
     components/             layout, map, ranking, chart, feed, explanation
 DEMO_SCRIPT.md              three-minute demo walkthrough
+DEPLOYMENT.md               how to put it on the internet
 ```
 
 ## Seed data
