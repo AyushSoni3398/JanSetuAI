@@ -30,6 +30,41 @@ function useCountUp(target, duration = 700) {
   return display;
 }
 
+// Unicode blocks for the scripts complaints actually arrive in. Counting the
+// scripts present in the corpus keeps the hero honest: it cannot claim more
+// than the data contains, and it does not go stale when a language is added.
+const SCRIPT_BLOCKS = [
+  ["Latin", 0x0041, 0x024f],
+  ["Devanagari", 0x0900, 0x097f],
+  ["Bengali", 0x0980, 0x09ff],
+  ["Gurmukhi", 0x0a00, 0x0a7f],
+  ["Gujarati", 0x0a80, 0x0aff],
+  ["Odia", 0x0b00, 0x0b7f],
+  ["Tamil", 0x0b80, 0x0bff],
+  ["Telugu", 0x0c00, 0x0c7f],
+  ["Kannada", 0x0c80, 0x0cff],
+  ["Malayalam", 0x0d00, 0x0d7f],
+];
+
+function countScripts(complaints) {
+  const found = new Set();
+  for (const complaint of complaints) {
+    for (const ch of complaint.text) {
+      const cp = ch.codePointAt(0);
+      for (const [name, lo, hi] of SCRIPT_BLOCKS) {
+        if (cp >= lo && cp <= hi) {
+          found.add(name);
+          break;
+        }
+      }
+    }
+    // Every block is usually present within the first few hundred rows; stop
+    // early once they all are rather than scanning 1,000+ complaints.
+    if (found.size === SCRIPT_BLOCKS.length) break;
+  }
+  return found.size;
+}
+
 function Stat({ value, label }) {
   const shown = useCountUp(value);
   return (
@@ -48,6 +83,7 @@ export default function HomePage() {
   const languages = new Set(complaints.map((c) => c.language).filter(Boolean));
   const distinct = complaints.filter((c) => c.duplicate_of === null).length;
   const top = priorities.slice(0, 3);
+  const scripts = countScripts(complaints);
 
   return (
     <main className="relative">
@@ -62,7 +98,9 @@ export default function HomePage() {
       <Reveal className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/60 px-3 py-1 text-xs text-slate-400 backdrop-blur-sm">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-          Voice, text and WhatsApp &middot; 5 languages &middot; 2 scripts
+          Voice, text and WhatsApp
+          {languages.size > 0 && ` · ${languages.size} languages`}
+          {scripts > 0 && ` · ${scripts} scripts`}
         </span>
         <h2 className="mt-5 text-4xl font-bold tracking-tight text-slate-50 sm:text-5xl">
           Every complaint counted.
