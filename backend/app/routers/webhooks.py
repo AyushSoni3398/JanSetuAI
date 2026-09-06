@@ -13,12 +13,16 @@ only to word the reply. A civic platform should not accumulate a database
 linking phone numbers to complaints when nothing in the product needs it.
 """
 
-from fastapi import APIRouter, Depends, Form, Response
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Response
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.models import Complaint
 from app.services import ai_service, duplicate_service, workflow_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -41,8 +45,37 @@ def _twiml(message: str) -> Response:
     return Response(content=body, media_type="application/xml")
 
 
+def _analyse_in_background(complaint_id: int) -> None:
+    """Classify a complaint after the webhook has already replied.
+
+    Runs on its own session because the request's session is closed by the
+    time this executes.
+    """
+    db = SessionLocal()
+    try:
+        complaint = db.get(Complaint, complaint_id)
+        if complaint is None:
+            return
+        analysis, _provider = ai_service.analyze_text(complaint.text)
+        complaint.language = analysis.language
+        complaint.translated_text = analysis.translated_text
+        complaint.category = analysis.category
+        complaint.severity = analysis.severity
+        complaint.urgency = analysis.urgency
+        complaint.sentiment = analysis.sentiment
+        complaint.ai_summary = analysis.summary
+        complaint.population_affected = analysis.population_affected
+        duplicate_service.link_duplicate(db, complaint)
+        db.commit()
+    except Exception as exc:
+        logger.warning("Background analysis failed for #%s: %s", complaint_id, exc)
+    finally:
+        db.close()
+
+
 @router.post("/whatsapp")
 def whatsapp_inbound(
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
     Body: str = Form(default=""),
     From: str = Form(default=""),
@@ -75,42 +108,19 @@ def whatsapp_inbound(
     db.commit()
     db.refresh(complaint)
 
-    # Analysis is best effort: a complaint that could not be classified is
-    # still a complaint, and must not be lost because a provider was down.
-    try:
-        analysis, _provider = ai_service.analyze_text(complaint.text)
-        complaint.language = analysis.language
-        complaint.translated_text = analysis.translated_text
-        complaint.category = analysis.category
-        complaint.severity = analysis.severity
-        complaint.urgency = analysis.urgency
-        complaint.sentiment = analysis.sentiment
-        complaint.ai_summary = analysis.summary
-        complaint.population_affected = analysis.population_affected
-        canonical = duplicate_service.link_duplicate(db, complaint)
-        db.commit()
-        db.refresh(complaint)
-    except Exception:
-        canonical = None
+    # Reply first, analyse second.
+    #
+    # Twilio abandons a webhook that takes longer than about fifteen seconds,
+    # and a single model call plus its rate-limit pacing can exceed that on its
+    # own. Analysing inline meant the citizen got no reply at all. The complaint
+    # is already stored by this point, so nothing is lost - the classification
+    # simply lands a few seconds after the acknowledgement.
+    background.add_task(_analyse_in_background, complaint.id)
 
-    if complaint.category is None:
-        return _twiml(
-            f"{greeting}! Your report has been logged as #{complaint.id}. "
-            "It will be reviewed shortly."
-        )
-
-    lines = [
-        f"{greeting}! Report #{complaint.id} logged.",
-        f"Category: {complaint.category}",
-        f"Severity: {complaint.severity}/5",
-    ]
-    if canonical is not None:
-        lines.append(
-            f"Others have reported this too (grouped with #{canonical.id}) - "
-            "repeat reports help us prioritise it."
-        )
-    lines.append(f"Reply STATUS {complaint.id} any time to check progress.")
-    return _twiml("\n".join(lines))
+    return _twiml(
+        f"{greeting}! Report #{complaint.id} logged and being analysed now.\n"
+        f"Reply STATUS {complaint.id} in a moment for its category and status."
+    )
 
 
 def _report_number(text: str) -> int | None:

@@ -82,8 +82,16 @@ https://jansetu-api-f7y1.onrender.com/webhooks/whatsapp
 ```
 
 Strictly better than the Cloudflare tunnel used locally — the URL is stable, so
-it never needs re-pasting after a restart. Watch the cold start: if the service
-is asleep, Twilio's webhook can time out before it wakes, so hit `/health` first.
+it never needs re-pasting after a restart.
+
+The webhook acknowledges in milliseconds and classifies in the background,
+because Twilio abandons a webhook that takes longer than about fifteen
+seconds and a model call plus its rate-limit pacing can exceed that. The
+citizen gets a report number immediately; `STATUS <id>` returns the
+classification a moment later.
+
+Still hit `/health` before demoing: a sleeping free-tier service takes ~50
+seconds to wake, which Twilio will not wait for.
 
 ---
 
