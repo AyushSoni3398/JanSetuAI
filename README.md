@@ -121,7 +121,7 @@ Dashboard at http://localhost:5173
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/health` | API, database and active AI provider |
-| `POST` | `/complaints` | Submit a complaint (raw text only) |
+| `POST` | `/complaints` | Submit a complaint. `text`, `location_text` and `district_id` are required |
 | `GET` | `/complaints` | List; filters: `status`, `category`, `district_id`, `unanalyzed` |
 | `GET` | `/complaints/{id}` | One complaint |
 | `POST` | `/complaints/{id}/analyze` | Run the AI pass on one complaint |
@@ -152,6 +152,9 @@ A weighted sum of five factors, each min-max normalised across the district set:
 
 Three decisions worth knowing:
 
+- **A complaint must name its district.** Scoring groups by `district_id`, so
+  a report without one contributes to no ranking at all. The submission API
+  rejects it rather than accepting a report that would be silently ignored.
 - **Volume counts canonical complaints only.** Ten reports of one pothole are
   one problem. Duplicates are tracked separately as corroboration, so a single
   loud issue cannot outrank a district with many real ones.
