@@ -90,7 +90,7 @@ Point at the analysis card:
 **Optional, 10 seconds:** paste the Devanagari sample to show native script
 works too, or click **Speak your complaint** and say it aloud.
 
-### 0:55 – 1:35 — Policymaker side
+### 0:55 – 1:40 — Policymaker side
 
 Open **`/dashboard`**.
 
@@ -118,7 +118,16 @@ Point at the ranking.
 > are one problem, not ten, so duplicates count as corroboration, never volume.
 > Otherwise the loudest area wins instead of the worst-off one."
 
-### 1:35 – 2:10 — Why this area
+**Then type `pothole` into the complaint search box** (bottom right).
+
+> "And an official who doesn't read Hindi isn't locked out of the data. Search
+> runs over the original text *and* the English translation together — one
+> English word, 124 complaints, and not one of them was written in English."
+
+Point at a couple of results: Hindi and Marathi originals, English underneath.
+Clear the search before moving on.
+
+### 1:40 – 2:15 — Why this area
 
 Click **Muzaffarpur** — it opens its own page at `/districts/1`, a shareable link.
 
@@ -143,7 +152,7 @@ Now open **Pune** — the strongest 15 seconds of the demo.
 > score is population and low per-head investment. Same formula, opposite
 > explanation. A department can argue with this. They can't argue with a number."
 
-### 2:10 – 2:40 — What to build
+### 2:15 – 2:40 — What to build
 
 Open **`/recommendations`**.
 
@@ -264,7 +273,8 @@ speak. Chrome or Edge only.
 | Mic does nothing | Permission blocked, or offline | Type instead — the pipeline is identical |
 | WhatsApp gets the default reply | Tunnel URL changed | Re-paste the current tunnel URL into Twilio, or skip the beat |
 | Numbers differ from this script | DB reseeded, or live analysis ran | Expected — quote approximate scores |
-| Submit disabled | Text under 5 characters | Paste a sample |
+| Submit disabled | Text, location or district missing | All three are required — paste a sample and pick a district |
+| Search returns nothing | Term not in the corpus | Use `pothole`, `doctor` or `water` — all have many hits |
 
 **Golden rule:** if anything breaks, go to the district page and the
 recommendations. Those are the strongest parts and need only data already
