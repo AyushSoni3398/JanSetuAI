@@ -177,9 +177,18 @@ Go to **`/my-reports`**, click **No, still broken**.
 
 ## 3. Optional beats, if you have extra time
 
-**Live WhatsApp (30s).** Message the Twilio number from your phone; the reply
+**Live WhatsApp (30s).** Message the sandbox number from your phone; the reply
 comes back with a report number and classification, and it appears on the
-dashboard with a WhatsApp badge. *Only if the tunnel is confirmed working.*
+dashboard with a WhatsApp badge. Then send `STATUS <number>` to show tracking
+works over the same channel. *Only if the tunnel is confirmed working.*
+
+WhatsApp commands:
+
+| Send | Reply |
+|---|---|
+| any complaint text | report number, category, severity |
+| `STATUS 42` | current status of report 42 |
+| `NOT FIXED 42` | reopens report 42 if it was marked resolved |
 
 **The AI pass (15s).** The dashboard shows **"Analyse 10 pending"** — click it
 and watch complaints classify live. Takes about a minute with a live provider.

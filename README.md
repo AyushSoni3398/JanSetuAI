@@ -133,8 +133,8 @@ Dashboard at http://localhost:5173
 | `GET` | `/districts/{id}/priority` | One district + factor breakdown |
 | `GET` | `/districts/{id}/recommendations` | Projects recommended for one district |
 | `GET` | `/recommendations` | National project recommendations, ranked |
-| `POST` | `/webhooks/whatsapp` | Inbound complaint from a messaging app (Twilio webhook contract) |
-| `POST` | `/webhooks/whatsapp/status` | Status lookup by report number |
+| `POST` | `/webhooks/whatsapp` | Inbound message from a messaging app: a complaint, or a `STATUS`/`NOT FIXED` command (Twilio webhook contract) |
+
 
 ---
 
