@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useData } from "../DataContext.jsx";
 import { scoreColor } from "../components/DistrictMap.jsx";
+import WhatsAppCta from "../components/WhatsAppCta.jsx";
 
 function Stat({ value, label }) {
   return (
@@ -38,6 +39,7 @@ export default function HomePage() {
           >
             Report an issue
           </Link>
+          <WhatsAppCta variant="inline" />
           <Link
             to="/dashboard"
             className="rounded border border-slate-600 px-5 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-800"
@@ -95,7 +97,11 @@ export default function HomePage() {
         </>
       )}
 
-      <section className="mt-12 grid gap-4 sm:grid-cols-3">
+      <section className="mt-12">
+        <WhatsAppCta />
+      </section>
+
+      <section className="mt-4 grid gap-4 sm:grid-cols-3">
         {[
           [
             "Any language, any script",

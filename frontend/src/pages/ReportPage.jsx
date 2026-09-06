@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useData } from "../DataContext.jsx";
 import VoiceInput from "../components/VoiceInput.jsx";
+import WhatsAppCta from "../components/WhatsAppCta.jsx";
 import { addMyComplaint } from "../myReports.js";
 
 const SAMPLES = [
@@ -217,6 +218,13 @@ export default function ReportPage() {
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
         {result && <AnalysisCard result={result} />}
       </form>
+
+      <div className="mt-6">
+        <p className="mb-3 text-center text-xs uppercase tracking-wide text-slate-500">
+          or report without opening this site
+        </p>
+        <WhatsAppCta />
+      </div>
     </main>
   );
 }
