@@ -18,10 +18,18 @@ class ComplaintCreate(BaseModel):
     """
 
     text: str = Field(min_length=5, max_length=5000)
-    location_text: str | None = Field(default=None, max_length=255)
+
+    # Location and district are required on this path. A complaint with no
+    # district is invisible to the priority score - scoring groups by
+    # district_id - so accepting one would silently discard the report from
+    # every ranking it should have influenced.
+    location_text: str = Field(
+        min_length=3, max_length=255, description="Street, ward or landmark"
+    )
+    district_id: int = Field(description="Which district the problem is in")
+
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)
-    district_id: int | None = None
 
 
 class ComplaintOut(BaseModel):
