@@ -32,9 +32,10 @@ const post = (path, body) => send("POST", path, body);
 export const api = {
   health: () => get("/health"),
   priorities: () => get("/districts/priority"),
-  // 200 is the server-side cap; the seeded set is well under it.
-  complaints: () => get("/complaints?limit=200"),
-  analyzePending: () => post("/complaints/analyze-pending?limit=200"),
+  // 1000 is the server-side cap; the seeded corpus sits under it, so the
+  // dashboard sees every complaint rather than an arbitrary first page.
+  complaints: () => get("/complaints?limit=1000"),
+  analyzePending: () => post("/complaints/analyze-pending?limit=50"),
   districts: () => get("/districts"),
   recommendations: () => get("/recommendations?limit=200"),
   districtRecommendations: (id) => get(`/districts/${id}/recommendations`),

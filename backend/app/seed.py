@@ -22,11 +22,11 @@ from app.seed_data import CATEGORIES, DISTRICTS, LOCATIONS, STATUSES, TEMPLATES
 RANDOM_SEED = 20260906
 
 # How many complaints each district tier receives. Volume is itself a priority
-# signal (0.25 weight in M6), so the tiers must differ here too.
+# signal (0.25 weight in the score), so the tiers must differ here too.
 VOLUME_BY_TIER = {
-    "underserved": (22, 28),
-    "moderate": (10, 15),
-    "well_served": (3, 6),
+    "underserved": (130, 165),
+    "moderate": (58, 92),
+    "well_served": (18, 34),
 }
 
 # Severity is nudged per tier: underserved areas report worse problems.
@@ -37,7 +37,10 @@ SEVERITY_BIAS = {
     "well_served": (1, 3),
 }
 
-UNANALYSED_FRACTION = 0.10  # ~10% left for the M5 pass to process live
+# Left unanalysed so the AI pass has live work during a demo. A fixed COUNT,
+# not a fraction: at this corpus size a 10% fraction would be ~80 complaints,
+# and a real provider on a free tier cannot analyse 80 in one batch.
+UNANALYSED_TARGET = 10
 
 
 def _pick_template(rng: random.Random, tier: str):
@@ -108,7 +111,8 @@ def seed(reset: bool = False) -> None:
                 lang, raw, english, category, severity, urgency, sentiment = _pick_template(
                     rng, tier
                 )
-                analysed = rng.random() > UNANALYSED_FRACTION
+                # Decided after the loop so the count is exact.
+                analysed = True
 
                 c = Complaint(
                     text=raw,
@@ -155,6 +159,18 @@ def seed(reset: bool = False) -> None:
 
                 db.add(c)
                 created.append(c)
+
+        # Blank the AI fields on a fixed number of complaints, chosen at random
+        # across the whole corpus rather than per district.
+        for complaint in rng.sample(created, min(UNANALYSED_TARGET, len(created))):
+            complaint.language = None
+            complaint.translated_text = None
+            complaint.category = None
+            complaint.severity = None
+            complaint.urgency = None
+            complaint.sentiment = None
+            complaint.ai_summary = None
+            complaint.population_affected = None
 
         db.commit()
         for c in created:

@@ -54,7 +54,10 @@ def list_complaints(
         description="true returns only complaints the AI pass has not touched yet",
     ),
     skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=200),
+    # Raised from 200 so the dashboard can load the whole corpus in one
+    # request. A production deployment would paginate instead - at this
+    # size one request is simpler and still fast.
+    limit: int = Query(default=50, ge=1, le=1000),
 ):
     """List complaints, newest first, with optional filters."""
     stmt = select(Complaint)
