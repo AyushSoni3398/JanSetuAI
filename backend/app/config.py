@@ -51,7 +51,22 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        """Allowed origins, with a scheme guaranteed.
+
+        Render supplies a bare hostname when one service references
+        another, and CORS matching is exact - an entry without a scheme
+        never matches, and the browser blocks every request with no
+        server-side error to show for it.
+        """
+        origins = []
+        for origin in self.CORS_ORIGINS.split(","):
+            origin = origin.strip()
+            if not origin:
+                continue
+            if not origin.startswith(("http://", "https://")):
+                origin = f"https://{origin}"
+            origins.append(origin)
+        return origins
 
 
 settings = Settings()

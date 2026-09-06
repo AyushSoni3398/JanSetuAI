@@ -2,7 +2,13 @@
 // with no configuration; a deployment sets VITE_API_BASE at build time.
 // An empty string means "same origin", which is what the bundled build uses
 // when FastAPI serves the frontend itself - hence ?? rather than ||.
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+//
+// Render supplies a bare hostname ("jansetu-api.onrender.com"), so a value
+// with no scheme is assumed to be https rather than treated as a relative
+// path, which would silently point every call back at the frontend.
+const RAW_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+const API_BASE =
+  RAW_BASE && !/^https?:\/\//.test(RAW_BASE) ? `https://${RAW_BASE}` : RAW_BASE;
 
 async function get(path) {
   const res = await fetch(`${API_BASE}${path}`);

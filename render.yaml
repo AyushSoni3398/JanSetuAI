@@ -1,28 +1,53 @@
-# Render blueprint for the API. Deploying the frontend is a separate static
-# host (Vercel or Netlify) - see DEPLOYMENT.md.
+# Render blueprint: one Python API and one static frontend.
 #
-# The free tier has an ephemeral filesystem, so the SQLite file is rebuilt on
-# every deploy. That is acceptable here because the data is synthetic and the
-# seed is deterministic; a real deployment would use a managed Postgres and
-# change DATABASE_URL, nothing else.
+# The frontend is a separate static site rather than being built inside the
+# Python service, because Render's Python runtime is not guaranteed to have
+# Node available. Each service also then scales and caches on its own terms.
+#
+# Render substitutes hostnames without a scheme, so the API normalises
+# CORS_ORIGINS and the frontend normalises VITE_API_BASE - both prepend
+# https:// when the value has no scheme of its own.
 services:
-  - type: web
-    name: jansetu-api
+  - name: jansetu-api
+    type: web
     runtime: python
     rootDir: backend
-    # Build the frontend too, so one service serves the whole app and no
-    # CORS configuration is needed. VITE_API_BASE is empty so the bundle
-    # calls its own origin.
-    buildCommand: >-
-      pip install -r requirements.txt &&
-      cd ../frontend && npm ci && VITE_API_BASE= npm run build
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # Seeds only when the database is empty, so a restart does not wipe data
+    # and a fresh instance still comes up with the full corpus.
     startCommand: python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.3"
       - key: DATABASE_URL
         value: sqlite:///./jansetu.db
       - key: CORS_ORIGINS
-        sync: false          # set to the deployed frontend origin
+        fromService:
+          name: jansetu-web
+          type: web
+          property: host
       - key: GEMINI_API_KEY
-        sync: false          # set in the Render dashboard, never in git
+        sync: false          # set in the Render dashboard; never in git
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite,gemini-flash-latest,gemini-3.5-flash,gemini-3.6-flash
+
+  - name: jansetu-web
+    type: web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    # Client-side routing: every unmatched path must return the app shell, or
+    # a hard refresh on /districts/2 would 404.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE
+        fromService:
+          name: jansetu-api
+          type: web
+          property: host

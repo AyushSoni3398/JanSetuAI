@@ -1,129 +1,93 @@
 # Deployment
 
-Two pieces: a FastAPI service and a static frontend. Everything in the repo is
-already configured — what remains is creating accounts and pasting two URLs,
-which has to be done by the repository owner.
+Two Render services from one blueprint: a Python API and a static frontend.
+Everything in the repo is configured — what remains needs a Render account,
+which only the repository owner can create.
 
-**Deploy the backend first.** The frontend needs the API's URL at build time.
+## What you get
 
----
+| Service | What it is | URL shape |
+|---|---|---|
+| `jansetu-api` | FastAPI, seeded on boot | `https://jansetu-api.onrender.com` |
+| `jansetu-web` | Static React build | `https://jansetu-web.onrender.com` |
 
-## Option A — one service, one URL (simplest)
-
-FastAPI serves the built frontend when `frontend/dist` exists, so a single
-deployment covers the whole application and **CORS never comes into it** —
-every request is same-origin.
-
-```bash
-cd frontend; npm run build
-```
-
-Then deploy the backend as below. `render.yaml` already builds the frontend as
-part of the build step. `VITE_API_BASE` must be set to an empty string for that
-build so API calls stay relative.
-
-Use this unless you specifically want the frontend on a CDN.
-
-## Option B — separate frontend and backend
-
-Better caching and independent deploys, at the cost of one CORS setting.
-Follow all three steps below.
+The frontend is a separate static site rather than being built inside the
+Python service, because Render's Python runtime is not guaranteed to have Node
+available. Each service also caches and scales on its own terms.
 
 ---
 
-## 1. Backend — Render
+## Deploy
 
 1. Sign in at [render.com](https://render.com) with GitHub.
-2. **New → Blueprint**, pick this repository. Render reads [`render.yaml`](render.yaml).
-3. Set the two environment variables it asks for:
+2. **New → Blueprint**, select this repository. Render reads
+   [`render.yaml`](render.yaml) and proposes both services.
+3. It will ask for one value it cannot infer:
 
    | Variable | Value |
    |---|---|
-   | `GEMINI_API_KEY` | your Google AI Studio key (or leave empty to run the mock) |
-   | `CORS_ORIGINS` | leave blank for now — filled in at step 3 |
+   | `GEMINI_API_KEY` | your Google AI Studio key — or leave empty to run the deterministic mock |
 
-4. Deploy, then confirm `https://<your-service>.onrender.com/health` returns
-   `{"status":"ok","database":"connected",...}`.
+4. **Apply**. The API builds first; the static site follows.
 
-The start command seeds the database before serving, so a fresh instance comes
-up with the full synthetic corpus.
+Everything else is wired in the blueprint. `CORS_ORIGINS` and `VITE_API_BASE`
+are filled from each service's hostname automatically, so there is no URL to
+copy between dashboards and no CORS step to forget.
 
-**Free-tier behaviour worth knowing:** the service sleeps after ~15 minutes of
-inactivity and takes roughly 50 seconds to wake. Open `/health` a minute before
-demoing. The filesystem is also ephemeral, so complaints submitted to the
-deployed instance disappear on the next deploy — acceptable for synthetic data,
-and the fix is a managed Postgres plus a changed `DATABASE_URL`, nothing more.
+## Verify
 
----
+- [ ] `https://jansetu-api.onrender.com/health` returns `"database":"connected"`
+- [ ] `https://jansetu-api.onrender.com/docs` loads
+- [ ] The frontend shows real numbers, not zeros
+- [ ] `https://jansetu-web.onrender.com/districts/1` works on a **hard refresh**
+- [ ] Footer reads `AI: gemini` (or `mock` with no key)
+- [ ] Submitting a complaint returns an analysis
 
-## 2. Frontend — Vercel or Netlify
-
-1. Sign in at [vercel.com](https://vercel.com) (or Netlify) with GitHub and
-   import this repository.
-2. Configure the project:
-
-   | Setting | Value |
-   |---|---|
-   | Root directory | `frontend` |
-   | Build command | `npm run build` |
-   | Output directory | `dist` |
-
-3. Add one environment variable:
-
-   ```
-   VITE_API_BASE = https://<your-service>.onrender.com
-   ```
-
-   It is read at **build time**, so changing it later needs a redeploy.
-
-4. Deploy, and note the resulting URL.
-
-SPA routing is already handled — [`vercel.json`](frontend/vercel.json) and
-[`public/_redirects`](frontend/public/_redirects) rewrite every path to
-`index.html`, so `/districts/2` works on a hard refresh instead of 404ing.
+If the dashboard shows zeros and the browser console reports a CORS error, the
+API has not finished its first deploy — the hostname reference resolves on the
+next sync. Redeploy the API and reload.
 
 ---
 
-## 3. Close the loop on CORS
+## Free-tier behaviour worth knowing
 
-Back in Render, set `CORS_ORIGINS` to the frontend URL from step 2 and redeploy:
+**The API sleeps after ~15 minutes idle** and takes roughly 50 seconds to wake.
+Open `/health` a minute before demoing so the first visitor does not sit on a
+spinner.
 
-```
-CORS_ORIGINS=https://jansetu.vercel.app
-```
+**The filesystem is ephemeral.** Complaints submitted to the deployed instance
+disappear on the next deploy. Acceptable for synthetic data; the fix is a
+managed Postgres and a changed `DATABASE_URL`, nothing else — no dialect-specific
+column types are used anywhere.
 
-Without this the browser blocks every API call and the dashboard sits empty
-with a network error. It is the single most common thing to forget.
+**Seeding is idempotent.** `python -m app.seed` without `--reset` only seeds an
+empty database, so restarts do not wipe live submissions.
 
 ---
 
-## 4. WhatsApp, if you want it on the deployed instance
+## WhatsApp on the deployed instance
 
 Point the Twilio sandbox webhook at the deployed API instead of a local tunnel:
 
 ```
-https://<your-service>.onrender.com/webhooks/whatsapp
+https://jansetu-api.onrender.com/webhooks/whatsapp
 ```
 
-This is strictly better than the Cloudflare tunnel used in local development —
-the URL is stable, so it does not need re-pasting after every restart.
-
-Watch the cold start: if the service is asleep, Twilio's webhook may time out
-before it wakes. Hit `/health` first to warm it.
+Strictly better than the Cloudflare tunnel used locally — the URL is stable, so
+it never needs re-pasting after a restart. Watch the cold start: if the service
+is asleep, Twilio's webhook can time out before it wakes, so hit `/health` first.
 
 ---
 
-## Checklist
+## A note on scheme handling
 
-- [ ] `https://<api>/health` returns `database: connected`
-- [ ] `https://<api>/docs` loads
-- [ ] Frontend loads and shows real numbers, not zeros
-- [ ] `https://<frontend>/districts/1` works on a **hard refresh**
-- [ ] Footer shows `AI: gemini` (or `mock` if no key is set)
-- [ ] Submitting a complaint returns an analysis
-- [ ] If using WhatsApp: a message gets a `Report #N logged` reply
+Render exposes a referenced service as a bare hostname, not a full URL. Both
+sides normalise it: the frontend prepends `https://` to `VITE_API_BASE`, and the
+API prepends it to any `CORS_ORIGINS` entry without a scheme. CORS matching is
+exact, so an origin missing its scheme silently blocks every request with no
+server-side error to show for it.
 
 ## Local development is unchanged
 
-`VITE_API_BASE` defaults to `http://localhost:8000` when unset, so nothing
-about the local workflow changes.
+`VITE_API_BASE` defaults to `http://localhost:8000` when unset, and
+`CORS_ORIGINS` defaults to the Vite dev origins.
