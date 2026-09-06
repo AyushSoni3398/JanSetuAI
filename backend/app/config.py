@@ -64,6 +64,9 @@ class Settings(BaseSettings):
             if not origin:
                 continue
             if not origin.startswith(("http://", "https://")):
+                # A bare name with no dot is a service name, not a host.
+                if "." not in origin and origin != "localhost":
+                    origin = f"{origin}.onrender.com"
                 origin = f"https://{origin}"
             origins.append(origin)
         return origins

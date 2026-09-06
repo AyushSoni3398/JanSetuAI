@@ -7,8 +7,14 @@
 // with no scheme is assumed to be https rather than treated as a relative
 // path, which would silently point every call back at the frontend.
 const RAW_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
-const API_BASE =
-  RAW_BASE && !/^https?:\/\//.test(RAW_BASE) ? `https://${RAW_BASE}` : RAW_BASE;
+function resolveBase(value) {
+  if (!value) return value; // empty string means same-origin
+  if (/^https?:\/\//.test(value)) return value;
+  // A bare name with no dot is a Render service name, not a host.
+  const host = value.includes(".") ? value : `${value}.onrender.com`;
+  return `https://${host}`;
+}
+const API_BASE = resolveBase(RAW_BASE);
 
 async function get(path) {
   const res = await fetch(`${API_BASE}${path}`);

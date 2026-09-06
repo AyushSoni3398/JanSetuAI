@@ -8,8 +8,12 @@ which only the repository owner can create.
 
 | Service | What it is | URL shape |
 |---|---|---|
-| `jansetu-api` | FastAPI, seeded on boot | `https://jansetu-api.onrender.com` |
-| `jansetu-web` | Static React build | `https://jansetu-web.onrender.com` |
+| `jansetu-api` | FastAPI, seeded on boot | https://jansetu-api-f7y1.onrender.com |
+| `jansetu-web` | Static React build | https://jansetu-web.onrender.com |
+
+Render appends a suffix when a name is already taken globally — hence the
+`-f7y1` on the API. Both URLs are set explicitly in `render.yaml`; if you
+redeploy under different names, change them there.
 
 The frontend is a separate static site rather than being built inside the
 Python service, because Render's Python runtime is not guaranteed to have Node
@@ -30,16 +34,20 @@ available. Each service also caches and scales on its own terms.
 
 4. **Apply**. The API builds first; the static site follows.
 
-Everything else is wired in the blueprint. `CORS_ORIGINS` and `VITE_API_BASE`
-are filled from each service's hostname automatically, so there is no URL to
-copy between dashboards and no CORS step to forget.
+`CORS_ORIGINS` and `VITE_API_BASE` are set explicitly in the blueprint.
+
+**Do not use `fromService ... property: host` for these.** It resolves to the
+service *name*, not the hostname — which yields `https://jansetu-web`, an
+origin that matches nothing, and the browser then blocks every API call with
+no server-side error to show for it. The code has a fallback that appends
+`.onrender.com` to a bare name, but explicit URLs are the reliable answer.
 
 ## Verify
 
-- [ ] `https://jansetu-api.onrender.com/health` returns `"database":"connected"`
-- [ ] `https://jansetu-api.onrender.com/docs` loads
+- [ ] https://jansetu-api-f7y1.onrender.com/health returns `"database":"connected"`
+- [ ] https://jansetu-api-f7y1.onrender.com/docs loads
 - [ ] The frontend shows real numbers, not zeros
-- [ ] `https://jansetu-web.onrender.com/districts/1` works on a **hard refresh**
+- [ ] https://jansetu-web.onrender.com/districts/1 works on a **hard refresh**
 - [ ] Footer reads `AI: gemini` (or `mock` with no key)
 - [ ] Submitting a complaint returns an analysis
 
@@ -70,7 +78,7 @@ empty database, so restarts do not wipe live submissions.
 Point the Twilio sandbox webhook at the deployed API instead of a local tunnel:
 
 ```
-https://jansetu-api.onrender.com/webhooks/whatsapp
+https://jansetu-api-f7y1.onrender.com/webhooks/whatsapp
 ```
 
 Strictly better than the Cloudflare tunnel used locally — the URL is stable, so
