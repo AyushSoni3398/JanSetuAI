@@ -89,7 +89,7 @@ python -m venv .venv
 python -m pip install -r backend/requirements.txt
 ```
 
-Seed the database with 10 districts and 135 synthetic complaints, then run the
+Seed the database with 10 districts and ~894 synthetic complaints, then run the
 API (both from `backend/`):
 
 ```bash
@@ -131,6 +131,10 @@ Dashboard at http://localhost:5173
 | `GET` | `/districts` | All districts |
 | `GET` | `/districts/priority` | Ranked by priority score |
 | `GET` | `/districts/{id}/priority` | One district + factor breakdown |
+| `GET` | `/districts/{id}/recommendations` | Projects recommended for one district |
+| `GET` | `/recommendations` | National project recommendations, ranked |
+| `POST` | `/webhooks/whatsapp` | Inbound complaint from a messaging app (Twilio webhook contract) |
+| `POST` | `/webhooks/whatsapp/status` | Status lookup by report number |
 
 ---
 
@@ -287,13 +291,20 @@ DEMO_SCRIPT.md              three-minute demo walkthrough
 ## Seed data
 
 10 districts across 9 states, engineered into three tiers (underserved /
-moderate / well-served) so the weighting has a real signal to find, and 135
+moderate / well-served) so the weighting has a real signal to find, and ~894
 complaints in Hindi, Marathi, Tamil, Bengali and English — in both native and
 romanised script.
 
+Complaints are spread across all three intake channels (`web`, `voice`,
+`whatsapp`) so the multi-channel model is visible in the UI. **These channel
+labels are synthetic** - no seeded complaint actually arrived over WhatsApp;
+they describe a hypothetical deployment. Complaints genuinely submitted
+through the webhook carry `source: "whatsapp"` for real.
+
 `RANDOM_SEED` is fixed, so reruns produce identical data and demo numbers never
-shift. About 10% of complaints are left unanalysed so the AI pass has live work
-to do.
+shift. Ten complaints are left unanalysed so the AI pass has live work to do - a
+fixed count rather than a percentage, because a free-tier provider cannot
+analyse a large batch in one run.
 
 This data is synthetic and deliberately shaped. It demonstrates that the
 weighting is correct — not that the model discovered anything unknown.
@@ -311,6 +322,44 @@ Scope decisions for a 24-hour build, not oversights:
 - **No websockets**, no multi-tenancy, no RBAC, no model training.
 - **SQLite, not Postgres.** No dialect-specific column types are used, so
   switching is a `DATABASE_URL` change plus adding `psycopg2-binary`.
+
+## Designed as a Digital Public Good
+
+The [DPG Standard](https://digitalpublicgoods.net/standard/) sets nine
+requirements. Where this build meets one it is stated plainly; where it does
+not, that is stated too rather than glossed over.
+
+| # | DPG requirement | Status |
+|---|---|---|
+| 1 | Relevance to a Sustainable Development Goal | **Met** - SDG 11 (sustainable cities) and SDG 16 (accountable institutions) |
+| 2 | Use of an approved open licence | **Met** - MIT, see [LICENSE](LICENSE) |
+| 3 | Clear ownership | **Met** - stated in LICENSE |
+| 4 | Platform independence | **Met** - Python and Node, no proprietary runtime. The AI provider is an interchangeable interface and the mock keeps the system fully functional with no vendor at all |
+| 5 | Documentation | **Met** - this README covers setup, API, scoring and limitations |
+| 6 | Mechanism for extracting data | **Met** - every entity is readable over a documented JSON API; the store is a single SQLite file |
+| 7 | Adherence to privacy and applicable laws | **Partial** - no accounts, no personal data collected, and the WhatsApp webhook deliberately does not store the sender's phone number. A production deployment would need a formal privacy policy and a retention rule |
+| 8 | Adherence to standards and best practices | **Partial** - OpenAPI 3 spec at `/openapi.json`, ISO 639-1 language codes, BCP-47 speech tags. No India Stack or other DPI standard integration |
+| 9 | Do no harm by design | **Partial** - scoring is deterministic and fully explainable rather than a model verdict, and every score exposes its factors. No formal bias assessment has been carried out |
+
+### What being a DPG changes about the design
+
+- **The AI is replaceable, not required.** `analyze_text()` falls back to a
+  deterministic analyser, so an adopting government is never locked to one
+  vendor or forced to send citizen data to an external API.
+- **The score is arithmetic, not a model output.** Weights are constants in
+  `scoring_service.py` and every result carries its own breakdown, so a
+  department can audit or challenge a ranking rather than take it on faith.
+- **Recommendations are derived, not generated.** The model classifies
+  individual complaints; the clustering and ranking behind a project proposal
+  are deterministic Python.
+- **Minimal data collection.** No accounts, no phone numbers, no device
+  identifiers. "My reports" lives in the citizen's own browser.
+
+### Honest gaps
+
+No formal privacy policy, no bias audit, no accessibility conformance
+statement, and no third-party security review. These are what a real DPG
+submission would need next, and none of them are 24-hour work.
 
 ## Licence
 
