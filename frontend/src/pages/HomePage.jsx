@@ -1,12 +1,41 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useData } from "../DataContext.jsx";
 import { scoreColor } from "../components/DistrictMap.jsx";
 import WhatsAppCta from "../components/WhatsAppCta.jsx";
 
+// Counts up to the value over ~700ms. Purely decorative, and it lands on the
+// exact number rather than an eased approximation.
+function useCountUp(target, duration = 700) {
+  const [display, setDisplay] = useState(0);
+  const frame = useRef();
+
+  useEffect(() => {
+    if (!target) {
+      setDisplay(0);
+      return undefined;
+    }
+    const start = performance.now();
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      // ease-out so it decelerates into the final number
+      setDisplay(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame.current);
+  }, [target, duration]);
+
+  return display;
+}
+
 function Stat({ value, label }) {
+  const shown = useCountUp(value);
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-center">
-      <div className="text-2xl font-semibold text-slate-100">{value}</div>
+    <div className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-center transition-colors hover:border-slate-500">
+      <div className="text-2xl font-semibold text-slate-100 tabular-nums">
+        {shown.toLocaleString()}
+      </div>
       <div className="text-xs text-slate-400">{label}</div>
     </div>
   );
@@ -71,7 +100,7 @@ export default function HomePage() {
                 <Link
                   key={p.district.id}
                   to={`/districts/${p.district.id}`}
-                  className="rounded-lg border border-slate-700 bg-slate-800 p-4 transition-colors hover:border-slate-500"
+                  className="rounded-lg border border-slate-700 bg-slate-800 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-500 hover:shadow-lg"
                 >
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs text-slate-500">#{p.rank}</span>
