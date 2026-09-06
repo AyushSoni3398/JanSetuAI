@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { API_BASE } from "../api.js";
 import { useData } from "../DataContext.jsx";
 
 const NAV = [
@@ -29,7 +30,7 @@ function NavItem({ to, label, end }) {
 }
 
 export default function Layout() {
-  const { health, error } = useData();
+  const { health, error, loading, reload } = useData();
   const [scrolled, setScrolled] = useState(false);
 
   // The header gains a border and blur once the page moves, so it separates
@@ -71,8 +72,27 @@ export default function Layout() {
       </header>
 
       {error && (
-        <div className="mx-auto mt-3 w-full max-w-7xl rounded border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-300">
-          {error} &mdash; is the backend running on port 8000?
+        <div className="mx-auto mt-3 w-full max-w-7xl rounded border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-medium">Could not reach the API.</span>
+            <span className="text-red-300/80">{error}</span>
+            <button
+              onClick={() => reload()}
+              disabled={loading}
+              className="ml-auto rounded border border-red-400/50 px-3 py-1 text-xs hover:bg-red-500/20 disabled:opacity-50"
+            >
+              {loading ? "Retrying..." : "Retry"}
+            </button>
+          </div>
+          {/* The cause differs by environment, so name both rather than
+              guessing: locally the server is usually just not running; on a
+              free host it is asleep, or a shield extension blocked the call. */}
+          <p className="mt-1.5 text-xs text-red-300/70">
+            Trying <span className="font-mono">{API_BASE || "this origin"}</span>.
+            {API_BASE.includes("localhost")
+              ? " Start the backend with uvicorn on port 8000."
+              : " The service may be waking from idle — retry in a moment. If it persists, check whether a browser shield or ad blocker is blocking the request."}
+          </p>
         </div>
       )}
 

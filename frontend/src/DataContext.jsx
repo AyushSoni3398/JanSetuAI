@@ -15,22 +15,33 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const reload = useCallback(async () => {
-    try {
-      const [h, p, c] = await Promise.all([
-        api.health(),
-        api.priorities(),
-        api.complaints(),
-      ]);
-      setHealth(h);
-      setPriorities(p);
-      setComplaints(c);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  const reload = useCallback(async ({ retries = 2 } = {}) => {
+    setLoading(true);
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const [h, p, c] = await Promise.all([
+          api.health(),
+          api.priorities(),
+          api.complaints(),
+        ]);
+        setHealth(h);
+        setPriorities(p);
+        setComplaints(c);
+        setError(null);
+        setLoading(false);
+        return;
+      } catch (err) {
+        // A free-tier host sleeps when idle and takes the better part of a
+        // minute to wake, so the first request after a quiet spell fails.
+        // Retrying costs nothing and turns a dead page into a slow one.
+        if (attempt === retries) {
+          setError(err.message);
+        } else {
+          await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
