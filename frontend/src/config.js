@@ -9,7 +9,7 @@
 // The number must be digits only, with country code and no "+", because that is
 // the format wa.me expects in its path.
 export const WHATSAPP_NUMBER =
-  import.meta.env.VITE_WHATSAPP_NUMBER || "17372508034";
+  import.meta.env.VITE_WHATSAPP_NUMBER || "14155238886";
 
 // Twilio's sandbox only accepts messages from numbers that have sent the join
 // code first. Set to an empty string once running on an approved WhatsApp
