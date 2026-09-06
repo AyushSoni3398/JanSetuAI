@@ -1,0 +1,23 @@
+# Render blueprint for the API. Deploying the frontend is a separate static
+# host (Vercel or Netlify) - see DEPLOYMENT.md.
+#
+# The free tier has an ephemeral filesystem, so the SQLite file is rebuilt on
+# every deploy. That is acceptable here because the data is synthetic and the
+# seed is deterministic; a real deployment would use a managed Postgres and
+# change DATABASE_URL, nothing else.
+services:
+  - type: web
+    name: jansetu-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.3"
+      - key: DATABASE_URL
+        value: sqlite:///./jansetu.db
+      - key: CORS_ORIGINS
+        sync: false          # set to the deployed frontend origin
+      - key: GEMINI_API_KEY
+        sync: false          # set in the Render dashboard, never in git
