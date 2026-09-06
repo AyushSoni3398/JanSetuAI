@@ -8,6 +8,29 @@ which has to be done by the repository owner.
 
 ---
 
+## Option A — one service, one URL (simplest)
+
+FastAPI serves the built frontend when `frontend/dist` exists, so a single
+deployment covers the whole application and **CORS never comes into it** —
+every request is same-origin.
+
+```bash
+cd frontend; npm run build
+```
+
+Then deploy the backend as below. `render.yaml` already builds the frontend as
+part of the build step. `VITE_API_BASE` must be set to an empty string for that
+build so API calls stay relative.
+
+Use this unless you specifically want the frontend on a CDN.
+
+## Option B — separate frontend and backend
+
+Better caching and independent deploys, at the cost of one CORS setting.
+Follow all three steps below.
+
+---
+
 ## 1. Backend — Render
 
 1. Sign in at [render.com](https://render.com) with GitHub.
