@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { api } from "../api.js";
+import RecommendationList from "../components/RecommendationList.jsx";
 import { useData } from "../DataContext.jsx";
 import CategoryChart from "../components/CategoryChart.jsx";
 import ComplaintFeed from "../components/ComplaintFeed.jsx";
@@ -8,6 +11,14 @@ import NotFoundPage from "./NotFoundPage.jsx";
 export default function DistrictPage() {
   const { districtId } = useParams();
   const { complaints, priorities, loading, reload } = useData();
+  const [recommendations, setRecommendations] = useState([]);
+
+  useEffect(() => {
+    api
+      .districtRecommendations(districtId)
+      .then(setRecommendations)
+      .catch(() => setRecommendations([]));
+  }, [districtId]);
 
   if (loading) {
     return (
@@ -85,6 +96,16 @@ export default function DistrictPage() {
         <ScoreExplanation priority={priority} totalDistricts={priorities.length} />
         <CategoryChart complaints={mine} districtName={district.name} />
       </div>
+
+      <section>
+        <h3 className="text-sm font-semibold text-slate-200">
+          Recommended projects for {district.name}
+        </h3>
+        <p className="mb-3 text-xs text-slate-500">
+          What the complaint pattern here implies should be built
+        </p>
+        <RecommendationList items={recommendations} showDistrict={false} />
+      </section>
 
       <ComplaintFeed
         complaints={mine}

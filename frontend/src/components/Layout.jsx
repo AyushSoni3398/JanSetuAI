@@ -4,6 +4,7 @@ import { useData } from "../DataContext.jsx";
 const NAV = [
   { to: "/", label: "Home", end: true },
   { to: "/dashboard", label: "Dashboard" },
+  { to: "/recommendations", label: "Projects" },
   { to: "/report", label: "Report an issue" },
   { to: "/my-reports", label: "My reports" },
 ];
