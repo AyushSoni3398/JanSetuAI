@@ -100,8 +100,8 @@ export default function ReportPage() {
     try {
       const created = await api.createComplaint({
         text: text.trim(),
-        location_text: locationText.trim() || null,
-        district_id: districtId ? Number(districtId) : null,
+        location_text: locationText.trim(),
+        district_id: Number(districtId),
       });
 
       // Submission and analysis are separate endpoints by design. Chaining them
@@ -121,6 +121,7 @@ export default function ReportPage() {
       setResult(analysis);
       setText("");
       setLocationText("");
+      setDistrictId("");
       addMyComplaint(created.id);
       await reload();
     } catch (err) {
@@ -175,14 +176,21 @@ export default function ReportPage() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <p className="mt-4 text-xs text-slate-500">
+          Location and district are required &mdash; without them a report cannot
+          be counted towards any district&apos;s priority.
+        </p>
+
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400">
-              Location (optional)
+              Location <span className="text-red-400">*</span>
             </label>
             <input
               value={locationText}
               onChange={(e) => setLocationText(e.target.value)}
+              required
+              minLength={3}
               maxLength={255}
               placeholder="Ward 7, Main Bazaar Road"
               className="mt-1 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:border-blue-500 focus:outline-none"
@@ -190,14 +198,15 @@ export default function ReportPage() {
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wide text-slate-400">
-              District
+              District <span className="text-red-400">*</span>
             </label>
             <select
               value={districtId}
               onChange={(e) => setDistrictId(e.target.value)}
+              required
               className="mt-1 w-full rounded border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-blue-500 focus:outline-none"
             >
-              <option value="">Not sure</option>
+              <option value="">Select a district</option>
               {districts.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}, {d.state}
@@ -209,7 +218,12 @@ export default function ReportPage() {
 
         <button
           type="submit"
-          disabled={submitting || text.trim().length < 5}
+          disabled={
+            submitting ||
+            text.trim().length < 5 ||
+            locationText.trim().length < 3 ||
+            !districtId
+          }
           className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-40"
         >
           {submitting ? "Submitting..." : "Submit report"}
