@@ -31,7 +31,7 @@ cd C:\Users\ayush\JanSetuAI\JanSetuAI\frontend; npm run dev
 - [ ] **Use Chrome or Edge, not Brave** — Brave blocks the speech service, so voice input cannot work there
 - [ ] http://localhost:8000/health returns `"database":"connected"` and `"ai_provider":"gemini"`
 - [ ] http://localhost:5173 loads and **map tiles render** (needs internet — test on venue wifi)
-- [ ] Header shows **`AI: gemini`** (falls back to `mock` if the daily quota is spent — still fully functional)
+- [ ] Footer shows **`AI: gemini`** (falls back to `mock` if the daily quota is spent — still fully functional)
 - [ ] **Grant microphone permission now** — open `/report`, click "Speak your complaint", allow the prompt. Never let that dialog appear first on stage
 - [ ] Browser storage cleared so "My reports" starts empty
 - [ ] Tabs pre-opened: `/`, `/dashboard`, `/recommendations`, `/report`
@@ -94,8 +94,8 @@ works too, or click **Speak your complaint** and say it aloud.
 
 Open **`/dashboard`**.
 
-> "894 complaints, ten districts, five languages, arriving through three
-> channels — web, voice and WhatsApp."
+> "1,180 complaints, thirteen districts across twelve states, ten languages,
+> arriving through three channels — web, voice and WhatsApp."
 
 Point at the map.
 
@@ -106,12 +106,12 @@ Point at the ranking.
 
 | # | District | Score | Issues | Avg severity | Infra index |
 |---|---|---|---|---|---|
-| 1 | Muzaffarpur, Bihar | **89.6** | 135 (+18) | 4.37 | 28.4 |
-| 2 | Balangir, Odisha | **83.1** | 146 (+18) | 4.32 | 31.2 |
-| 3 | Chitrakoot, UP | **76.7** | 139 (+17) | 4.35 | 34.6 |
+| 1 | Muzaffarpur, Bihar | **87.1** | 144 (+9) | 4.26 | 28.4 |
+| 2 | Balangir, Odisha | **83.9** | 151 (+13) | 4.59 | 31.2 |
+| 3 | Chitrakoot, UP | **75.5** | 149 (+9) | 4.32 | 34.6 |
+| 4 | Bathinda, Punjab | **72.4** | 142 (+14) | 4.23 | 39.8 |
 | … | | | | | |
-| 8 | Pune, Maharashtra | 25.4 | 24 (+10) | 2.33 | 78.9 |
-| 10 | Coimbatore, Tamil Nadu | 10.6 | 20 (+14) | 2.25 | 74.2 |
+| 13 | Coimbatore, Tamil Nadu | low | | | 74.2 |
 
 > "Severity 30%, volume 25%, infrastructure 20%, population 15%, investment
 > 10%. Note the `+18` — those are repeat reports. Ten reports of one pothole
@@ -122,9 +122,11 @@ Point at the ranking.
 
 > "And an official who doesn't read Hindi isn't locked out of the data. Search
 > runs over the original text *and* the English translation together — one
-> English word, 124 complaints, and not one of them was written in English."
+> English word, 156 complaints across six languages, and not one of them was
+> written in English."
 
-Point at a couple of results: Hindi and Marathi originals, English underneath.
+Point at a couple of results: Hindi, Odia, Punjabi and Kannada originals,
+English underneath.
 Clear the search before moving on.
 
 ### 1:40 – 2:15 — Why this area
@@ -133,8 +135,8 @@ Click **Muzaffarpur** — it opens its own page at `/districts/1`, a shareable l
 
 | Factor | Points | Raw |
 |---|---|---|
-| Average severity | **30.0** | 4.37 / 5 |
-| Distinct issues | **22.9** | 135 |
+| Average severity | **26.6** | 4.26 / 5 |
+| Distinct issues | **23.7** | 144 |
 | Infrastructure shortfall | **20.0** | index 28.4 / 100 |
 | Investment per person | 10.0 | ₹19.79 |
 | Population | 6.8 | 4,801,062 |
@@ -157,17 +159,15 @@ Now open **Pune** — the strongest 15 seconds of the demo.
 Open **`/recommendations`**.
 
 > "Ranking districts isn't enough — a policymaker holding a budget needs to know
-> what to build. These are 64 project recommendations derived from clustered
+> what to build. These are 67 project recommendations derived from clustered
 > complaints. And this part is deterministic: the model classifies individual
 > complaints, but the clustering and ranking are plain Python, so a department
 > can audit every line."
 
 | | |
 |---|---|
-| **93.9** | Road resurfacing and pothole repair programme — **Muzaffarpur** |
-| | *36 distinct roads complaints at average severity 4.6/5, corroborated by 3 repeat reports, affecting ~262,145 people* |
-| **91.6** | Primary health centre staffing and equipment — **Balangir** |
-| | *31 distinct healthcare complaints at average severity 5.0/5, ~190,388 people* |
+| **91.3** | Storm water drainage and sewerage works — **Balangir** |
+| **89.4** | Road resurfacing and pothole repair programme — **Muzaffarpur** |
 
 ### 2:40 – 3:00 — Closing the loop
 
@@ -268,7 +268,7 @@ speak. Chrome or Edge only.
 |---|---|---|
 | `ERR_CONNECTION_REFUSED` | uvicorn not running | Restart it; keep the terminal open |
 | Blank map, markers visible | No internet for OSM tiles | Keep going — ranking and explanation carry the demo |
-| Header shows `AI: mock` | Daily free quota spent | Say so plainly; classification is unaffected, only translation |
+| Footer shows `AI: mock` | Daily free quota spent | Say so plainly; classification is unaffected, only translation |
 | Voice shows a Brave warning | Running in Brave | Switch to Chrome/Edge, or skip the voice beat |
 | Mic does nothing | Permission blocked, or offline | Type instead — the pipeline is identical |
 | WhatsApp gets the default reply | Tunnel URL changed | Re-paste the current tunnel URL into Twilio, or skip the beat |

@@ -89,7 +89,7 @@ python -m venv .venv
 python -m pip install -r backend/requirements.txt
 ```
 
-Seed the database with 10 districts and ~894 synthetic complaints, then run the
+Seed the database with 13 districts and ~1,180 synthetic complaints, then run the
 API (both from `backend/`):
 
 ```bash
@@ -182,9 +182,11 @@ taking the majority — not by first match. That detail matters: the DANDA
 Unicode files it in the *Devanagari* block, so a first-match detector labels
 every properly punctuated Bengali complaint as Hindi.
 
-Devanagari carries both Hindi and Marathi, so those are separated by function
-words (`आहे`/`नाही` vs `है`/`नहीं`). Text with no Indic characters falls
-through to romanised word cues.
+Eight scripts are recognised: Devanagari, Bengali, Gurmukhi, Gujarati, Odia,
+Tamil, Telugu, Kannada and Malayalam. Two of them carry more than one
+language — Devanagari holds both Hindi and Marathi, Bengali also carries
+Assamese — so those are separated by function words (`आहे`/`नाही` vs
+`है`/`नहीं`). Text with no Indic characters falls through to romanised cues.
 
 ### Voice input
 
@@ -239,12 +241,14 @@ render two different badges for one language.
 **Be aware of what the mock does and does not do.** Measured against the 25
 ground-truth seed templates, split by script:
 
-| | Romanised (18) | Native script (7) | Combined (25) |
-|---|---|---|---|
-| Language detection | 100% | 100% | **25/25 (100%)** |
-| Category | 100% | 100% | **25/25 (100%)** |
-| Severity, exact | 50% | 29% | 11/25 (44%) |
-| Severity, within ±1 | 100% | 100% | **25/25 (100%)** |
+| | Result |
+|---|---|
+| Language detection | **41/41 (100%)** across 10 languages |
+| Category | **41/41 (100%)** |
+| Severity, within ±1 | **40/41 (98%)** |
+
+Per language, detection and category are 100% for every one of hi, mr, bn, ta,
+te, kn, or, pa, gu and en.
 
 Severity is the weakest signal — it is the one judgement call a keyword matcher
 cannot really make — but it never misses by more than one point, and it carries
@@ -293,10 +297,15 @@ DEMO_SCRIPT.md              three-minute demo walkthrough
 
 ## Seed data
 
-10 districts across 9 states, engineered into three tiers (underserved /
-moderate / well-served) so the weighting has a real signal to find, and ~894
-complaints in Hindi, Marathi, Tamil, Bengali and English — in both native and
-romanised script.
+13 districts across 12 states, engineered into three tiers (underserved /
+moderate / well-served) so the weighting has a real signal to find, and ~1,180
+complaints in ten languages — Hindi, Marathi, Bengali, Tamil, Telugu, Kannada,
+Odia, Punjabi, Gujarati and English — in both native and romanised script.
+
+**Complaint language follows the district's region.** Templates are filtered by
+the languages plausible for each state before severity is considered, because
+a Tamil complaint filed in Bihar is the kind of detail that makes synthetic
+data obviously synthetic.
 
 Complaints are spread across all three intake channels (`web`, `voice`,
 `whatsapp`) so the multi-channel model is visible in the UI. **These channel
