@@ -56,10 +56,14 @@ class ComplaintAnalysis(BaseModel):
 _SCRIPT_RANGES = [
     ("hi", 0x0900, 0x0963),   # Devanagari, below the danda
     ("hi", 0x0966, 0x097F),   # Devanagari, above the danda
-    ("bn", 0x0980, 0x09FF),
+    ("bn", 0x0980, 0x09FF),   # Bengali - also used for Assamese
+    ("pa", 0x0A00, 0x0A7F),   # Gurmukhi
     ("gu", 0x0A80, 0x0AFF),
+    ("or", 0x0B00, 0x0B7F),   # Odia
     ("ta", 0x0B80, 0x0BFF),
     ("te", 0x0C00, 0x0C7F),
+    ("kn", 0x0C80, 0x0CFF),
+    ("ml", 0x0D00, 0x0D7F),
 ]
 
 # Devanagari carries both Hindi and Marathi, so script alone cannot separate
@@ -86,41 +90,49 @@ _ROMAN_HINTS = {
 # str.lower() is a no-op for Indic scripts, so one lookup covers both.
 _CATEGORY_KEYWORDS = {
     "Roads": [
+        "ରାସ୍ତା", "ଗାତ", "ਸੜਕ", "ਟੋਏ", "రోడ్డు", "గుంత", "ರಸ್ತೆ", "ಗುಂಡಿ", "રસ્તા", "ખાડા",
         "road", "pothole", "gaddha", "khadde", "sadak", "rasta", "rastyavar", "highway",
         "सड़क", "गड्ढा", "गड्ढे", "रास्ता", "रस्ता", "रस्त्यावर", "खड्डे",
         "রাস্তা", "গর্ত", "சாலை", "குழி",
     ],
     "Water Supply": [
+        "ପାଣି", "ਪਾਣੀ", "ਨਲਕੇ", "నీరు", "ನೀರು", "પાણી",
         "water", "paani", "nal ", "tap", "panyachi", "jol", "muddy", "borewell",
         "पानी", "पाणी", "पाण्याची", "नल", "जल", "नळ",
         "পানি", "জল", "নল", "தண்ணீர்", "குழாய்",
     ],
     "Sanitation": [
+        "ଆବର୍ଜନା", "ਕੂੜਾ", "చెత్త", "ಕಸ", "કચરો",
         "garbage", "kuppai", "waste", "kachra", "toilet", "sanitation", "rubbish", "dump",
         "कचरा", "कूड़ा", "गंदगी", "सफाई", "स्वच्छता",
         "আবর্জনা", "নোংরা", "ময়লা", "குப்பை", "கழிவு",
     ],
     "Electricity": [
+        "ବିଦ୍ୟୁତ", "ਬਿਜਲੀ", "విద్యుత్", "ವಿದ್ಯುತ್", "વીજળી",
         "electric", "power", "vij", "bijli", "bidyut", "outage", "transformer",
         "बिजली", "विद्युत", "वीज", "करंट",
         "বিদ্যুৎ", "কারেন্ট", "மின்சாரம்", "மின்",
     ],
     "Public Transport": [
+        "ବସ", "ਬੱਸ", "బస్", "ಬಸ್", "બસ",
         "bus", "transport", "auto", "vasathi", "route", "pergundu", "train",
         "बस", "परिवहन", "बससेवा", "रेल",
         "বাস", "পরিবহন", "பேருந்து", "போக்குவரத்து",
     ],
     "Healthcare": [
+        "ଡାକ୍ତର", "ਡਾਕਟਰ", "వైద్యుడు", "ವೈದ್ಯ", "ಆಸ್ಪತ್ರೆ", "ડૉક્ટર",
         "hospital", "doctor", "daktar", "health centre", "health center", "maruthuva", "clinic",
         "अस्पताल", "डॉक्टर", "स्वास्थ्य", "दवाखाना", "रुग्णालय",
         "হাসপাতাল", "ডাক্তার", "চিকিৎসক", "மருத்துவமனை", "மருத்துவர்",
     ],
     "Drainage": [
+        "ନର୍ଦ୍ଦମା", "ਨਾਲੀ", "కాలువ", "ಚರಂಡಿ", "ગટર",
         "drain", "naali", "sewage", "sewer", "waterlog", "flood", "overflow",
         "नाली", "नाला", "गटार", "सीवर", "जलभराव",
         "নর্দমা", "ড্রেন", "கழிவுநீர்", "வடிகால்",
     ],
     "Street Lighting": [
+        "ଆଲୋକ", "ਲਾਈਟ", "దీపా", "ದೀಪ", "લાઇટ",
         "street light", "streetlight", "lamp", "pole", "dark",
         "स्ट्रीट लाइट", "बत्ती", "रोशनी", "दिवा", "पथदिवा", "अंधेरा",
         "বাতি", "আলো", "விளக்கு", "தெருவிளக்கு",
@@ -133,6 +145,7 @@ _SEVERITY_HIGH = [
     "दुर्घटना", "अपघात", "खतरनाक", "धोकादायक", "बीमारी", "बिमारी", "आजार", "मौत", "गंभीर",
     "দুর্ঘটনা", "বিপজ্জনক", "রোগ", "মৃত্যু", "গুরুতর",
     "விபத்து", "ஆபத்து", "நோய்",
+    "ଦୁର୍ଘଟଣା", "ରୋଗ", "ਹਾਦਸੇ", "ਖ਼ਤਰਨਾਕ", "ప్రమాద", "ಅಪಘಾತ", "અકસ્માત",
 ]
 
 # A problem type carries inherent severity before any keyword is read: no
@@ -154,11 +167,13 @@ _SEVERITY_MED = [
     "weeks", "hafte", "broken", "kharab", "not working", "irregular", "delay",
     "हफ्ते", "महीने", "खराब", "बंद", "आठवडे", "महिने", "नियमित नाही",
     "সপ্তাহ", "মাস", "খারাপ", "வாரம்", "மாதம்", "பழுது",
+    "ਹਫ਼ਤਿਆਂ", "ବନ୍ଦ", "అనియమిత", "ಇಲ್ಲ", "અનિયમિત",
 ]
 _POSITIVE = [
     "good condition", "repaired", "improved", "sudharli", "resolved", "no longer an issue",
     "ठीक हो गया", "सुधार", "सुधारली", "दुरुस्त", "अच्छी स्थिति",
     "ভালো হয়েছে", "সংস্কার", "சரிசெய்யப்பட்டது",
+    "સારી થઈ ગઈ", "ଭଲ ହୋଇଛି",
 ]
 _MILD = [
     "slightly", "occasionally", "mostly works", "could be", "minor", "thoda",
