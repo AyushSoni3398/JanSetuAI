@@ -6,8 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import District
-from app.schemas import DistrictOut, DistrictPriorityOut, FactorOut
-from app.services import scoring_service
+from app.schemas import (
+    DistrictOut,
+    DistrictPriorityOut,
+    FactorOut,
+    RecommendationOut,
+)
+from app.services import recommendation_service, scoring_service
 
 router = APIRouter(prefix="/districts", tags=["districts"])
 
@@ -62,3 +67,34 @@ def district_priority(district_id: int, db: Session = Depends(get_db)):
             detail=f"District {district_id} not found",
         )
     return _to_out(score)
+
+
+def _recommendation_out(rec) -> RecommendationOut:
+    return RecommendationOut(
+        district=DistrictOut.model_validate(rec.district),
+        district_rank=rec.district_rank,
+        district_score=rec.district_score,
+        category=rec.category,
+        project=rec.project,
+        sector=rec.sector,
+        issue_count=rec.issue_count,
+        repeat_reports=rec.repeat_reports,
+        average_severity=rec.average_severity,
+        people_affected=rec.people_affected,
+        score=rec.score,
+        rationale=rec.rationale,
+    )
+
+
+@router.get("/{district_id}/recommendations", response_model=list[RecommendationOut])
+def district_recommendations(district_id: int, db: Session = Depends(get_db)):
+    """Projects recommended for one district, most urgent first."""
+    if db.get(District, district_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"District {district_id} not found",
+        )
+    return [
+        _recommendation_out(r)
+        for r in recommendation_service.recommendations_for(db, district_id)
+    ]
