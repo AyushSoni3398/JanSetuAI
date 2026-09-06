@@ -3,6 +3,8 @@ uvicorn[standard]>=0.32.0
 sqlalchemy>=2.0.36
 pydantic-settings>=2.6.0
 python-dotenv>=1.0.1
+# Required by FastAPI to parse form-encoded webhook payloads
+python-multipart>=0.0.9
 # Optional: only needed when ANTHROPIC_API_KEY is set. The mock path
 # runs without it, and the service degrades gracefully if it is missing.
 anthropic>=1.0.0
