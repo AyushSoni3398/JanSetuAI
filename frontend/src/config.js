@@ -15,7 +15,7 @@ export const WHATSAPP_NUMBER =
 // code first. Set to an empty string once running on an approved WhatsApp
 // Business number, and the join step disappears from the UI.
 export const WHATSAPP_JOIN_CODE =
-  import.meta.env.VITE_WHATSAPP_JOIN_CODE ?? "join twilio-trial";
+  import.meta.env.VITE_WHATSAPP_JOIN_CODE ?? "join cut-shade";
 
 export function whatsappLink(text) {
   const base = `https://wa.me/${WHATSAPP_NUMBER}`;
