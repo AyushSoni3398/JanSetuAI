@@ -139,3 +139,20 @@ class WorkflowOut(BaseModel):
 
     complaint: ComplaintOut
     allowed_transitions: list[str]
+
+
+class RecommendationOut(BaseModel):
+    """A proposed development project derived from clustered complaints."""
+
+    district: DistrictOut
+    district_rank: int
+    district_score: float
+    category: str
+    project: str = Field(description="The intervention this cluster implies")
+    sector: str
+    issue_count: int
+    repeat_reports: int
+    average_severity: float
+    people_affected: int
+    score: float = Field(ge=0, le=100, description="Recommendation priority 0-100")
+    rationale: str = Field(description="One-sentence justification with the evidence")
