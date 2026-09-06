@@ -33,6 +33,7 @@ class ComplaintOut(BaseModel):
 
     # Submitted
     text: str
+    source: str
     location_text: str | None
     latitude: float | None
     longitude: float | None

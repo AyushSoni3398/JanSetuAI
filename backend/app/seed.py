@@ -112,6 +112,12 @@ def seed(reset: bool = False) -> None:
 
                 c = Complaint(
                     text=raw,
+                    # The platform accepts complaints from three channels, so
+                    # the seeded history reflects all three rather than
+                    # implying everyone used the web form.
+                    source=rng.choices(
+                        ["whatsapp", "web", "voice"], weights=[0.5, 0.32, 0.18]
+                    )[0],
                     location_text=rng.choice(LOCATIONS),
                     # Jitter around the district centroid so map pins spread out.
                     latitude=district.latitude + rng.uniform(-0.06, 0.06),

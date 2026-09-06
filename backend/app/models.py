@@ -56,6 +56,12 @@ class Complaint(Base):
 
     # --- Filled at submission time (M3) ---
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    # Which channel the complaint arrived through: web, voice or whatsapp.
+    # Set by the server, never by the client - a caller must not be able to
+    # claim its report came from somewhere it did not.
+    source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="web", index=True
+    )
     location_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
     latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
