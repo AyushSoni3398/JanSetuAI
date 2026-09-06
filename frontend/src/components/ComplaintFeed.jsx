@@ -21,6 +21,14 @@ const STATUS_STYLES = {
 // the order here means we only render buttons that can actually succeed.
 const STATUS_ORDER = ["Received", "Under Review", "Funded", "Resolved"];
 
+// Where the complaint came in from. Shown so the multi-channel intake is
+// visible rather than only asserted.
+const SOURCE_LABELS = {
+  whatsapp: "WhatsApp",
+  voice: "Voice",
+  web: "Web",
+};
+
 function allowedTransitions(status) {
   const index = STATUS_ORDER.indexOf(status);
   if (index === -1) return STATUS_ORDER;
@@ -98,6 +106,11 @@ function Row({ complaint, onChanged }) {
         {complaint.language && (
           <span className="rounded bg-slate-700 px-1.5 py-0.5 text-xs uppercase text-slate-400">
             {complaint.language}
+          </span>
+        )}
+        {complaint.source && (
+          <span className="rounded border border-slate-600 px-1.5 py-0.5 text-xs text-slate-400">
+            {SOURCE_LABELS[complaint.source] ?? complaint.source}
           </span>
         )}
         <span
