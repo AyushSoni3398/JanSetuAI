@@ -43,11 +43,18 @@ SEVERITY_BIAS = {
 UNANALYSED_TARGET = 10
 
 
-def _pick_template(rng: random.Random, tier: str):
-    """Choose a complaint template whose severity fits the district tier."""
+def _pick_template(rng: random.Random, tier: str, languages: list[str]):
+    """Choose a template that fits the district's tier AND its languages.
+
+    Language is filtered first: a Tamil complaint filed in Bihar is the kind of
+    detail that makes synthetic data obviously synthetic. Severity is the
+    secondary filter, and it relaxes if the language pool is too small to
+    satisfy both.
+    """
     lo, hi = SEVERITY_BIAS[tier]
-    candidates = [t for t in TEMPLATES if lo <= t[4] <= hi]
-    return rng.choice(candidates or TEMPLATES)
+    regional = [t for t in TEMPLATES if t[0] in languages]
+    by_severity = [t for t in regional if lo <= t[4] <= hi]
+    return rng.choice(by_severity or regional or TEMPLATES)
 
 
 def _status_for(rng: random.Random, tier: str) -> str:
@@ -83,8 +90,8 @@ def seed(reset: bool = False) -> None:
             print(f"Reset: removed {deleted_c} complaints, {deleted_d} districts.")
 
         # --- districts -------------------------------------------------
-        districts: list[tuple[District, str]] = []
-        for name, state, lat, lon, pop, infra, invest, tier in DISTRICTS:
+        districts: list[tuple[District, str, list[str]]] = []
+        for name, state, lat, lon, pop, infra, invest, tier, languages in DISTRICTS:
             d = District(
                 name=name,
                 state=state,
@@ -95,9 +102,9 @@ def seed(reset: bool = False) -> None:
                 current_investment=invest,
             )
             db.add(d)
-            districts.append((d, tier))
+            districts.append((d, tier, languages))
         db.commit()
-        for d, _ in districts:
+        for d, _, _ in districts:
             db.refresh(d)
         print(f"Seeded {len(districts)} districts.")
 
@@ -105,11 +112,11 @@ def seed(reset: bool = False) -> None:
         now = datetime.now(timezone.utc)
         created: list[Complaint] = []
 
-        for district, tier in districts:
+        for district, tier, languages in districts:
             lo, hi = VOLUME_BY_TIER[tier]
             for _ in range(rng.randint(lo, hi)):
                 lang, raw, english, category, severity, urgency, sentiment = _pick_template(
-                    rng, tier
+                    rng, tier, languages
                 )
                 # Decided after the loop so the count is exact.
                 analysed = True
