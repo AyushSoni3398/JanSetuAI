@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8000";
+// Where the API lives. Defaults to the local backend so `npm run dev` works
+// with no configuration; a deployment sets VITE_API_BASE at build time.
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 async function get(path) {
   const res = await fetch(`${API_BASE}${path}`);
