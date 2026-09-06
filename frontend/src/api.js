@@ -36,6 +36,8 @@ export const api = {
   complaints: () => get("/complaints?limit=200"),
   analyzePending: () => post("/complaints/analyze-pending?limit=200"),
   districts: () => get("/districts"),
+  recommendations: () => get("/recommendations?limit=200"),
+  districtRecommendations: (id) => get(`/districts/${id}/recommendations`),
   complaint: (id) => get(`/complaints/${id}`),
   createComplaint: (payload) => post("/complaints", payload),
   analyze: (id) => post(`/complaints/${id}/analyze`),
