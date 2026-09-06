@@ -224,7 +224,8 @@ speak. Chrome or Edge only.
 > Both, and it tells them apart. Native script is identified by counting
 > characters per Unicode block; romanised text falls through to language-specific
 > word cues. Devanagari carries both Hindi and Marathi, so those are separated by
-> function words. Measured 25/25 on language and category across both scripts.
+> function words. Measured 41/41 on language and category across ten languages
+> and eight scripts.
 
 **"Why not Bhashini?"**
 > Out of scope for 24 hours. The analysis layer is a swappable interface — a
